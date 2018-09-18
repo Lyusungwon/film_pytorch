@@ -106,14 +106,18 @@ def train(epoch):
     epoch_start_time = time.time()
     start_time = time.time()
     train_loss = 0
+    train_correct = 0
+    batch_num = 0
+    batch_loss = 0
+    batch_correct = 0
     g_theta.train()
     f_phi.train()
     conv.train()
     text_encoder.train()
     for batch_idx, (image, question, answer) in enumerate(train_loader):
-        a = time.time() - start_time
-        print("load", a)
-        start_time = time.time()
+        # a = time.time() - start_time
+        # print("load", a)
+        # start_time = time.time()
         batch_size = image.size()[0]
         optimizer.zero_grad()
         image = image.to(device)
@@ -128,19 +132,39 @@ def train(epoch):
         loss = F.cross_entropy(output, answer)
         loss.backward()
         optimizer.step()
+
+        correct = (torch.max(output.data, 1)[1] == answer).sum()
         train_loss += loss.item()
-
-        a = time.time() - start_time
-        print('cal', a)
-        start_time = time.time()
+        train_correct += correct.item()
+        batch_num += batch_size
+        batch_loss += loss.item()
+        batch_correct += correct.item()
+        # a = time.time() - start_time
+        # print('cal', a)
+        # start_time = time.time()
         if batch_idx % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tTime: {:.6f}'.format(
-                epoch, batch_idx * batch_size, len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.item(), time.time() - start_time))
+            print('Train Epoch: {} [{}/{} ({:.0f}%)] / Loss: {:.4f} / Time: {:.4f} / Acc: {:.4f}'.format(
+                epoch, batch_idx * batch_size, len(train_loader.dataset), 
+                100. * batch_idx / len(train_loader), 
+                batch_loss / batch_num, 
+                time.time() - start_time,
+                batch_correct / batch_num))
 
-    print('====> Epoch: {} Average loss: {:.4f}\tTime: {:.4f}'.format(
-        epoch, train_loss / len(train_loader.dataset), time.time() - epoch_start_time))
-    writer.add_scalar('Train loss',  train_loss / len(train_loader.dataset), epoch)
+            start_time = time.time()
+            idx = epoch * len(train_loader) // args.log_interval + batch_idx // args.log_interval
+            writer.add_scalar('Train batch loss',  batch_loss / batch_num, idx) 
+            writer.add_scalar('Train batch accuracy',  batch_correct / batch_num, idx) 
+            batch_num = 0
+            batch_loss = 0
+            batch_correct = 0
+
+    print('====> Epoch: {} Average loss: {:.4f} / Time: {:.4f} / Accuracy: {:.4f}'.format(
+        epoch, 
+        train_loss / len(train_loader.dataset), 
+        time.time() - epoch_start_time,
+        train_correct / len(train_loader.dataset)))
+    writer.add_scalar('Train loss',  train_loss / len(train_loader.dataset), epoch) 
+    writer.add_scalar('Train accuracy',  1. * train_correct / len(train_loader.dataset), epoch) 
 
 
 def test(epoch):
@@ -149,6 +173,7 @@ def test(epoch):
     conv.eval()
     text_encoder.eval()
     test_loss = 0
+    correct = 0
     for batch_idx, (image, question, answer) in enumerate(train_loader):
         start_time = time.time()
         batch_size = image.size()[0]
@@ -164,25 +189,23 @@ def test(epoch):
         output = f_phi(relations_sum)
         loss = F.cross_entropy(output, answer)
         test_loss += loss.item()
+        correct += (torch.max(output.data, 1)[1] == answer).sum().item()
+
         if batch_idx == 0:
-            # n = min(batch_size, 8)
-            n = 1
-            # label = np.ones_like(image[:n, :64])
+            n = min(batch_size, 4)
             pad_question, lengths = pad_packed_sequence(question)
             pad_question = pad_question.transpose(0,1)
             question_text = [' '.join([data_dict['question']['idx_to_word'][i] for i in q]) for q in pad_question.cpu().numpy()[:n]]
             answer_text = [data_dict['answer']['idx_to_word'][a] for a in answer.cpu().numpy()[:n]]
-            text = 'Quesetion: ' + question_text[0] + '/' + 'Answer: ' + answer_text[0]
-            # for n, (q, a) in enumerate(zip(question_text, answer_text)):       
-            #     text += str(n) + '\n' + 'Quesetion: ' + q + '\n' + 'Answer: ' + a + '\n'
-            print(text)                
-            #     label[i] = cv2.putText(label[i],question_text[i],(2,16), cv2.FONT_HERSHEY_SIMPLEX, 1/5,(0,0,0),1,cv2.LINE_AA)
-            #     label[i] = cv2.putText(label[i],answer_text[i],(2,48), cv2.FONT_HERSHEY_SIMPLEX, 1/5,(0,0,0),1,cv2.LINE_AA)
-            # label = torch.tensor(label).to(device)
+            text = []
+            for j, (q, a) in enumerate(zip(question_text, answer_text)):
+                text.append('Quesetion {}: '.format(j) + question_text[j] + '/ Answer: ' + answer_text[j])
             writer.add_image('Image', torch.cat([image[:n]]), epoch)
             writer.add_text('QA', '\n'.join(text), epoch)
-    print('====> Test set loss: {:.4f}'.format(test_loss / len(test_loader.dataset)))
+    print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
+        test_loss / len(test_loader.dataset), test_loss / len(test_loader.dataset), correct / len(test_loader.dataset)))
     writer.add_scalar('Test loss',  test_loss / len(test_loader.dataset), epoch)
+    writer.add_scalar('Test accuracy',  correct / len(test_loader.dataset), epoch)
 
 for epoch in range(args.epochs):
     train(epoch)
