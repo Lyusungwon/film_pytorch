@@ -60,8 +60,8 @@ config_list = [args.epochs, args.batch_size, args.lr, args.device,
 config = '_'.join(map(str, config_list))
 print("Config:", config)
 
-train_loader = dataloader.train_loader('clevr', args.data_directory, args.batch_size, args.input_h, args.input_w)
-test_loader = dataloader.test_loader('clevr', args.data_directory, args.batch_size, args.input_h, args.input_w)
+train_loader = dataloader.train_loader('clevr', args.data_directory, args.batch_size, args.input_h, args.input_w, args.cpu_num)
+test_loader = dataloader.test_loader('clevr', args.data_directory, args.batch_size, args.input_h, args.input_w, args.cpu_num)
 
 cv_layout = [(args.cv_filter, args.cv_kernel, args.cv_stride) for i in range(args.cv_layer)]
 gt_layout = [args.gt_hidden for i in range(args.gt_layer)]
@@ -114,7 +114,6 @@ def train(epoch):
         a = time.time() - start_time
         print("load", a)
         start_time = time.time()
-
         batch_size = image.size()[0]
         optimizer.zero_grad()
         image = image.to(device)
@@ -134,8 +133,6 @@ def train(epoch):
         a = time.time() - start_time
         print('cal', a)
         start_time = time.time()
-        if a > 1:
-            print("long")
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tTime: {:.6f}'.format(
                 epoch, batch_idx * batch_size, len(train_loader.dataset),

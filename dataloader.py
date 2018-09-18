@@ -25,23 +25,25 @@ def collate_text(list_inputs):
     questions_packed = pack_sequence(questions)
     return images, questions_packed, answers
 
-def train_loader(data, data_directory = '/home/sungwon/data/', batch_size = 128, input_h = 128, input_w = 128):
+def train_loader(data, data_directory = '/home/sungwon/data/', batch_size = 128, input_h = 128, input_w = 128, cpu_num = 0):
     if data == 'clevr':
         train_dataloader = DataLoader(
             Clevr(data_directory + data + '/', train=True, 
             transform = transforms.Compose([transforms.Resize((input_h, input_w)),
                                                 transforms.ToTensor()])),
             batch_size=batch_size, shuffle=True,
+            num_workers = cpu_num,
             collate_fn = collate_text)
     return train_dataloader
 
-def test_loader(data, data_directory = '/home/sungwon/data', batch_size = 128, input_h = 128, input_w = 128):
+def test_loader(data, data_directory = '/home/sungwon/data', batch_size = 128, input_h = 128, input_w = 128, cpu_num = 0):
     if data == 'clevr':
         test_dataloader = DataLoader(
             Clevr(data_directory + data + '/', train=False, 
             transform = transforms.Compose([transforms.Resize((input_h, input_w)),
                                                 transforms.ToTensor()])),
             batch_size=batch_size, shuffle=True,
+            num_workers = cpu_num,
             collate_fn = collate_text)
     return test_dataloader
 
@@ -57,23 +59,15 @@ class Clevr(Dataset):
         self.img_dir = self.root_dir + 'images/'+ '{}/'.format(self.mode)
         if self.mode == 'sample':
             self.img_dir = self.root_dir + 'images/train/'
-        self.sample = False
         self.load_data()
 
     def make_data(self):
         q_corpus = set()
         a_corpus = set()
-        # if self.sample:
-        #     modes = ['sample']
-        # else:
         modes = ['train', 'val', 'sample']
         q_list = dict()
         qa_list = defaultdict(list)
         for mode in modes:
-            # if self.sample:
-            #     img_dir = self.root_dir + 'images/train/'
-            #     ann_dir = self.root_dir + 'questions/CLEVR_{}_questions.json'.format(mode)
-            # else:
             img_dir = self.root_dir + 'images/{}/'.format(mode)
             if mode == 'sample':
                 img_dir = self.root_dir + 'images/train/'
@@ -86,14 +80,11 @@ class Clevr(Dataset):
                 q_text = re.sub('\s+', ' ', q_text)
                 q_text_without_question_mark = q_text[:-1]
                 q_words = q_text_without_question_mark.split(' ')
-                q_words.insert(0, 1)
-                q_words.append(2)
                 q_corpus.update(q_words)
                 a_text = q_obj['answer'].lower()
                 a_text = re.sub('\s+', ' ', a_text)
                 a_corpus.add(a_text)
                 qa_list[mode].append((img_dir, q_words, a_text))
-                # q_corpus.update(a_corpus)
 
         word_to_idx = {"PAD":0, "SOS": 1, "EOS": 2}
         idx_to_word = {0: "PAD", 1: "SOS", 2: "EOS"}
@@ -121,6 +112,8 @@ class Clevr(Dataset):
         for mode in modes:
             for img_dir, q_word_list, answer_word in qa_list[mode]:                  
                 q = [word_to_idx[word] for word in q_word_list]
+                q.insert(0, 1)
+                q.append(2)
                 q = torch.from_numpy(np.array(q))
                 a = answer_word_to_idx[answer_word]
                 a = torch.from_numpy(np.array(a)).view(1)
@@ -162,8 +155,8 @@ def debug():
     for i, q, a in train_dataloader:
         n += 1
         # print(i)
-        # print(q) 
-        # print(a)
+        print(q) 
+        print(a)
         b = time() - start
         print(b)
         sum_ += b   

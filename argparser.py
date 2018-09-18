@@ -16,6 +16,8 @@ def default_parser():
                         help='log directory')
     parser.add_argument('--device', type=int, default=0, metavar='N',
                         help='number of cuda')
+    parser.add_argument('--cpu-num', type=int, default=0, metavar='N',
+                        help='number of cpu')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     parser.add_argument('--log-interval', type=int, default=100, metavar='N',
