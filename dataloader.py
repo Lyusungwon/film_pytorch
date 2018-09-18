@@ -25,7 +25,7 @@ def collate_text(list_inputs):
     questions_packed = pack_sequence(questions)
     return images, questions_packed, answers
 
-def train_loader(data, data_directory = '/home/sungwonlyu/data/', batch_size = 128, input_h = 128, input_w = 128):
+def train_loader(data, data_directory = '/home/sungwon/data/', batch_size = 128, input_h = 128, input_w = 128):
     if data == 'clevr':
         train_dataloader = DataLoader(
             Clevr(data_directory + data + '/', train=True, 
@@ -35,7 +35,7 @@ def train_loader(data, data_directory = '/home/sungwonlyu/data/', batch_size = 1
             collate_fn = collate_text)
     return train_dataloader
 
-def test_loader(data, data_directory = '/home/sungwonlyu/data', batch_size = 128, input_h = 128, input_w = 128):
+def test_loader(data, data_directory = '/home/sungwon/data', batch_size = 128, input_h = 128, input_w = 128):
     if data == 'clevr':
         test_dataloader = DataLoader(
             Clevr(data_directory + data + '/', train=False, 
