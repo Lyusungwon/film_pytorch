@@ -36,7 +36,7 @@ parser.add_argument('--gt-hidden', type=int, default=256)
 parser.add_argument('--gt-layer', type=int, default=4)
 # f phi
 parser.add_argument('--fp-hidden', type=int, default=256)
-parser.add_argument('--fp-dropout', type=int, default=2)
+parser.add_argument('--fp-dropout', type=int, default=4)
 parser.add_argument('--fp-dropout_rate', type=float, default=0.5)
 parser.add_argument('--fp-layer', type=int, default=3)
 
@@ -66,9 +66,9 @@ test_loader = dataloader.test_loader(args.dataset, args.data_directory, args.bat
 cv_layout = [(args.cv_filter, args.cv_kernel, args.cv_stride) for i in range(args.cv_layer)]
 gt_layout = [args.gt_hidden for i in range(args.gt_layer)]
 if args.dataset == 'clevr':
-    gt_layout.insert(0, (args.cv_filter + 1) * 2 + args.te_hidden)
+    gt_layout.insert(0, (args.cv_filter + 2) * 2 + args.te_hidden)
 else:
-    gt_layout.insert(0, (args.cv_filter + 1) * 2 + args.te_embedding * 2)    
+    gt_layout.insert(0, (args.cv_filter + 2) * 2 + args.te_embedding * 2)    
 fp_layout = [args.fp_hidden for i in range(args.fp_layer)]
 fp_layout.append(train_loader.dataset.a_size)
 
@@ -98,11 +98,14 @@ def object_pair(images, questions):
     n, c, h, w = images.size()
     o = h * w
     hd = questions.size(1)
-    cordinate = torch.linspace(-1, 1, o).view(1, o, 1).expand(n, o, 1).to(device)
+    # coordinate = torch.linspace(-1, 1, o).view(1, o, 1).expand(n, o, 1).to(device)
+    # coordinate = torch.zeros(n, o, 1).to(device)
+    x_coordinate = torch.linspace(-1, 1, h).view(1, h, 1, 1).expand(n, h, w, 1).contiguous().view(n, o, 1).to(device)
+    y_coordinate = torch.linspace(-1, 1, w).view(1, 1, w, 1).expand(n, h, w, 1).contiguous().view(n, o, 1).to(device)
     images = images.view(n, c, o).transpose(1, 2)
-    images = torch.cat([images, cordinate], 2)
-    images1 = images.unsqueeze(1).expand(n, o, o, c + 1).contiguous().view(n, o**2, c + 1)
-    images2 = images.unsqueeze(2).expand(n, o, o, c + 1).contiguous().view(n, o**2, c + 1)
+    images = torch.cat([images, x_coordinate, y_coordinate], 2)
+    images1 = images.unsqueeze(1).expand(n, o, o, c + 2).contiguous().view(n, o**2, c + 2)
+    images2 = images.unsqueeze(2).expand(n, o, o, c + 2).contiguous().view(n, o**2, c + 2)
     questions = questions.unsqueeze(1).expand(n, o**2, hd)
     pairs = torch.cat([images1, images2, questions], 2)
     return pairs
@@ -140,7 +143,8 @@ def train(epoch):
         loss = F.cross_entropy(output, answer)
         loss.backward()
         optimizer.step()
-        correct = (torch.max(output.data, 1)[1] == answer).sum()
+        pred = torch.max(output.data, 1)[1]
+        correct = (pred == answer).sum()
         train_loss += loss.item()
         train_correct += correct.item()
         batch_num += batch_size
@@ -151,12 +155,12 @@ def train(epoch):
         # start_time = time.time()
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)] Loss: {:.4f} / Time: {:.4f} / Acc: {:.4f}'.format(
-                epoch, batch_idx * batch_size, len(train_loader.dataset), 
+                epoch, 
+                batch_idx * batch_size, len(train_loader.dataset), 
                 100. * batch_idx / len(train_loader), 
                 batch_loss / batch_num, 
                 time.time() - start_time,
                 batch_correct / batch_num))
-
             idx = epoch * len(train_loader) // args.log_interval + batch_idx // args.log_interval
             writer.add_scalar('Batch loss',  batch_loss / batch_num, idx) 
             writer.add_scalar('Batch accuracy',  batch_correct / batch_num, idx) 
@@ -172,7 +176,7 @@ def train(epoch):
         time.time() - epoch_start_time,
         train_correct / len(train_loader.dataset)))
     writer.add_scalar('Train loss',  train_loss / len(train_loader.dataset), epoch) 
-    writer.add_scalar('Train accuracy',  1. * train_correct / len(train_loader.dataset), epoch) 
+    writer.add_scalar('Train accuracy',  train_correct / len(train_loader.dataset), epoch) 
 
 
 def test(epoch):
@@ -199,7 +203,8 @@ def test(epoch):
         output = f_phi(relations_sum)
         loss = F.cross_entropy(output, answer)
         test_loss += loss.item()
-        correct += (torch.max(output.data, 1)[1] == answer).sum().item()
+        pred = torch.max(output.data, 1)[1]
+        correct += (pred == answer).sum().item()
 
         if batch_idx == 0:
             n = min(batch_size, 4)
@@ -215,10 +220,10 @@ def test(epoch):
                 writer.add_text('QA', '\n'.join(text), epoch)
             else:
                 text = []
-                for j, (q, a) in enumerate(zip(question, answer)):
-                    text.append('Quesetion color :{} / Quesetion type :{}'.format(
-                        train_loader.dataset.idx_to_color[q.cpu().numpy()[0]], train_loader.dataset.idx_to_color[q.cpu().numpy()[1]])+ 
-                        '/ Answer: {}'.format(train_loader.dataset.idx_to_answer[a.item()]))
+                for j, (q, a, p) in enumerate(zip(question, answer, pred)):
+                    text.append('Quesetion color :{} / Quesetion type :{} / Answer: {} / Pred: {}'.format(
+                        train_loader.dataset.idx_to_color[q.cpu().numpy()[0]], train_loader.dataset.idx_to_question[q.cpu().numpy()[1]], 
+                        train_loader.dataset.idx_to_answer[a.item()], train_loader.dataset.idx_to_answer[p.item()]))
                 writer.add_image('Image', torch.cat([image[:n]]), epoch)
                 writer.add_text('QA', '\n'.join(text), epoch)
     print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
