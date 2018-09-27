@@ -137,6 +137,7 @@ def train(epoch):
             question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
             question = question.to(device)
+            answer = answer.squeeze(1)
         questions = text_encoder(question)
         pairs = object_pair(objects, questions)
         relations = g_theta(pairs)
@@ -198,6 +199,7 @@ def test(epoch):
             question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
             question = question.to(device)
+            answer = answer.squeeze(1)
         questions = text_encoder(question)
         pairs = object_pair(objects, questions)
         relations = g_theta(pairs)
