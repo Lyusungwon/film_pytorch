@@ -60,3 +60,15 @@ class Text_encoder(nn.Module):
         packed_embedded = PackedSequence(embedded, x.batch_sizes)
         output, (h_n, c_n) = self.lstm(packed_embedded)
         return h_n.squeeze(0)
+
+class Text_embedding(nn.Module):
+    def __init__(self, question_size, color_size, embedding_size):
+        super(Text_embedding, self).__init__()
+        self.question_embedding = nn.Embedding(question_size, embedding_size, padding_idx=None)
+        self.color_embedding = nn.Embedding(color_size, embedding_size, padding_idx=None)
+
+    def forward(self, x):
+        q_embedded = self.question_embedding(x[:, 1])
+        c_embedded = self.color_embedding(x[:, 0])
+        text_embedded = torch.cat([q_embedded, c_embedded], 1)
+        return text_embedded

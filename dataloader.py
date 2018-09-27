@@ -12,6 +12,8 @@ import json
 from time import time
 import re
 from collections import defaultdict
+import h5py
+import vqa_util
 
 def collate_text(list_inputs):
     list_inputs.sort(key=lambda x:len(x[1]), reverse = True)
@@ -25,7 +27,7 @@ def collate_text(list_inputs):
     questions_packed = pack_sequence(questions)
     return images, questions_packed, answers
 
-def train_loader(data, data_directory = '/home/sungwon/data/', batch_size = 128, input_h = 128, input_w = 128, cpu_num = 0):
+def train_loader(data, data_directory = '/home/sungwonlyu/data/', batch_size = 128, input_h = 128, input_w = 128, cpu_num = 0):
     if data == 'clevr':
         train_dataloader = DataLoader(
             Clevr(data_directory + data + '/', train=True, 
@@ -34,9 +36,14 @@ def train_loader(data, data_directory = '/home/sungwon/data/', batch_size = 128,
             batch_size=batch_size, shuffle=True,
             num_workers = cpu_num,
             collate_fn = collate_text)
+    elif data == 'sortofclevr':
+        train_dataloader = DataLoader(
+            SortOfClevr(data_directory + data + '/', train=True),
+            batch_size=batch_size, shuffle=True,
+            num_workers = cpu_num)        
     return train_dataloader
 
-def test_loader(data, data_directory = '/home/sungwon/data', batch_size = 128, input_h = 128, input_w = 128, cpu_num = 0):
+def test_loader(data, data_directory = '/home/sungwonlyu/data', batch_size = 128, input_h = 128, input_w = 128, cpu_num = 0):
     if data == 'clevr':
         test_dataloader = DataLoader(
             Clevr(data_directory + data + '/', train=False, 
@@ -45,6 +52,11 @@ def test_loader(data, data_directory = '/home/sungwon/data', batch_size = 128, i
             batch_size=batch_size, shuffle=True,
             num_workers = cpu_num,
             collate_fn = collate_text)
+    elif data == 'sortofclevr':
+        test_dataloader = DataLoader(
+            SortOfClevr(data_directory + data + '/', train=False), 
+            batch_size=batch_size, shuffle=True,
+            num_workers = cpu_num)
     return test_dataloader
 
 
@@ -144,9 +156,46 @@ class Clevr(Dataset):
             image = self.transform(image)
         return image, q, a
 
+class SortOfClevr(Dataset):
+    """Clevr dataset."""
+    def __init__(self, root_dir, train = True, transform = None):
+        self.root_dir = root_dir
+        self.mode = 'train' if train else 'val'
+        self.transform = transform
+        self.data_dir = self.root_dir + '{}/data.hy'.format(self.mode)
+        self.load_data()
+
+    def load_data(self):
+        file = h5py.File(self.data_dir, 'r')
+        data = []
+        for key, val in file.items():
+            image = val['image'].value
+            image.astype(float)
+            image = torch.from_numpy(image.transpose(2,0,1)).to(torch.float)
+            question = np.where(val['question'].value)[0]
+            question[1] = question[1] - vqa_util.NUM_COLOR
+            question = torch.Tensor(question).to(torch.long)
+            answer = np.where(val['answer'].value)[0]
+            answer = torch.Tensor(answer).to(torch.long)
+            data.append((image, question, answer))
+        self.data_list = data
+        self.idx_to_question = vqa_util.question_type_dict
+        self.idx_to_color = vqa_util.color_dict
+        self.idx_to_answer = vqa_util.answer_dict
+        self.q_size = len(self.idx_to_question)
+        self.c_size = len(self.idx_to_color)
+        self.a_size = len(self.idx_to_answer)
+
+    def __len__(self):
+        return len(self.data_list)
+
+    def __getitem__(self, idx):
+        image, q, a = self.data_list[idx]
+        return image, q, a
+
 def debug():
     start = time()
-    train_dataloader = train_loader('clevr', batch_size = 4)
+    train_dataloader = train_loader('sortofclevr', batch_size = 4)
     b = time() - start
     print(b)
     start = time()
@@ -154,16 +203,16 @@ def debug():
     n = 0
     for i, q, a in train_dataloader:
         n += 1
-        # print(i)
+        print(i)
         print(q) 
         print(a)
-        b = time() - start
-        print(b)
-        sum_ += b   
-        start = time()
+        # b = time() - start
+        # print(b)
+        # sum_ += b   
+        # start = time()
     print(sum_)
 def make_data():
-    train_dataloader = train_loader('clevr', batch_size = 4)
+    train_dataloader = train_loader('sortclevr', batch_size = 4)
     train_dataloader.dataset.make_data()
 # make_data()
 # debug()
