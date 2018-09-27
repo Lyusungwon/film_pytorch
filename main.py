@@ -129,7 +129,7 @@ def train(epoch):
         batch_size = image.size()[0]
         optimizer.zero_grad()
         image = image.to(device)
-        answer = answer.squeeze(1).to(device)
+        answer = answer.to(device)
         objects = conv(image)
         if args.dataset == 'clevr':
             question= PackedSequence(question.data.to(device), question.batch_sizes)
@@ -190,7 +190,7 @@ def test(epoch):
         start_time = time.time()
         batch_size = image.size()[0]
         image = image.to(device)
-        answer = answer.squeeze(1).to(device)
+        answer = answer.to(device)
         objects = conv(image)
         if args.dataset == 'clevr':
             question= PackedSequence(question.data.to(device), question.batch_sizes)
