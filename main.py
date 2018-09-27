@@ -222,7 +222,7 @@ def test(epoch):
                 writer.add_image('Image', torch.cat([image[:n]]), epoch)
                 writer.add_text('QA', '\n'.join(text), epoch)
     print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
-        test_loss / len(test_loader.dataset), test_loss / len(test_loader.dataset), correct / len(test_loader.dataset)))
+        test_loss / len(test_loader.dataset), correct / len(test_loader.dataset)))
     writer.add_scalar('Test loss',  test_loss / len(test_loader.dataset), epoch)
     writer.add_scalar('Test accuracy',  correct / len(test_loader.dataset), epoch)
 

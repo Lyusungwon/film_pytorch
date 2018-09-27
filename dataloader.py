@@ -39,8 +39,7 @@ def train_loader(data, data_directory = '/home/sungwon/data/', batch_size = 128,
     elif data == 'sortofclevr':
         train_dataloader = DataLoader(
             SortOfClevr(data_directory + data + '/', train=True),
-            batch_size=batch_size, shuffle=True,
-            num_workers = cpu_num)        
+            batch_size=batch_size, shuffle=True)        
     return train_dataloader
 
 def test_loader(data, data_directory = '/home/sungwon/data', batch_size = 128, input_h = 128, input_w = 128, cpu_num = 0):
@@ -55,8 +54,7 @@ def test_loader(data, data_directory = '/home/sungwon/data', batch_size = 128, i
     elif data == 'sortofclevr':
         test_dataloader = DataLoader(
             SortOfClevr(data_directory + data + '/', train=False), 
-            batch_size=batch_size, shuffle=True,
-            num_workers = cpu_num)
+            batch_size=batch_size, shuffle=True)
     return test_dataloader
 
 
