@@ -68,13 +68,13 @@ gt_layout = [args.gt_hidden for i in range(args.gt_layer)]
 if args.dataset == 'clevr':
     gt_layout.insert(0, (args.cv_filter + 2) * 2 + args.te_hidden)
 else:
-    gt_layout.insert(0, (args.cv_filter + 2) * 2 + args.te_embedding * 2)    
+    gt_layout.insert(0, (args.cv_filter + 2) * 2 + args.te_embedding * 2)
 fp_layout = [args.fp_hidden for i in range(args.fp_layer)]
 fp_layout.append(train_loader.dataset.a_size)
 
 conv = model.Conv(cv_layout, args.channel_size).to(device)
 g_theta = model.MLP(gt_layout).to(device)
-f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last = True).to(device)
+f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last=True).to(device)
 if args.dataset == 'clevr':
     text_encoder = model.Text_encoder(train_loader.dataset.q_size, args.te_embedding, args.te_hidden, args.te_layer).to(device)
 else:
@@ -94,6 +94,7 @@ writer = SummaryWriter(log)
 
 optimizer = optim.Adam(text_encoder.parameters(), lr=args.lr)
 
+
 def object_pair(images, questions):
     n, c, h, w = images.size()
     o = h * w
@@ -109,6 +110,7 @@ def object_pair(images, questions):
     questions = questions.unsqueeze(1).expand(n, o**2, hd)
     pairs = torch.cat([images1, images2, questions], 2)
     return pairs
+
 
 def train(epoch):
     epoch_start_time = time.time()
@@ -132,7 +134,7 @@ def train(epoch):
         answer = answer.to(device)
         objects = conv(image)
         if args.dataset == 'clevr':
-            question= PackedSequence(question.data.to(device), question.batch_sizes)
+            question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
             question = question.to(device)
         questions = text_encoder(question)
@@ -155,28 +157,28 @@ def train(epoch):
         # start_time = time.time()
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)] Loss: {:.4f} / Time: {:.4f} / Acc: {:.4f}'.format(
-                epoch, 
-                batch_idx * batch_size, len(train_loader.dataset), 
-                100. * batch_idx / len(train_loader), 
-                batch_loss / batch_num, 
+                epoch,
+                batch_idx * batch_size, len(train_loader.dataset),
+                100. * batch_idx / len(train_loader),
+                batch_loss / batch_num,
                 time.time() - start_time,
                 batch_correct / batch_num))
             idx = epoch * len(train_loader) // args.log_interval + batch_idx // args.log_interval
-            writer.add_scalar('Batch loss',  batch_loss / batch_num, idx) 
-            writer.add_scalar('Batch accuracy',  batch_correct / batch_num, idx) 
-            writer.add_scalar('Batch time', time.time() - start_time, idx) 
+            writer.add_scalar('Batch loss', batch_loss / batch_num, idx)
+            writer.add_scalar('Batch accuracy', batch_correct / batch_num, idx)
+            writer.add_scalar('Batch time', time.time() - start_time, idx)
             batch_num = 0
             batch_loss = 0
             batch_correct = 0
             start_time = time.time()
 
     print('====> Epoch: {} Average loss: {:.4f} / Time: {:.4f} / Accuracy: {:.4f}'.format(
-        epoch, 
-        train_loss / len(train_loader.dataset), 
+        epoch,
+        train_loss / len(train_loader.dataset),
         time.time() - epoch_start_time,
         train_correct / len(train_loader.dataset)))
-    writer.add_scalar('Train loss',  train_loss / len(train_loader.dataset), epoch) 
-    writer.add_scalar('Train accuracy',  train_correct / len(train_loader.dataset), epoch) 
+    writer.add_scalar('Train loss', train_loss / len(train_loader.dataset), epoch)
+    writer.add_scalar('Train accuracy', train_correct / len(train_loader.dataset), epoch)
 
 
 def test(epoch):
@@ -193,7 +195,7 @@ def test(epoch):
         answer = answer.to(device)
         objects = conv(image)
         if args.dataset == 'clevr':
-            question= PackedSequence(question.data.to(device), question.batch_sizes)
+            question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
             question = question.to(device)
         questions = text_encoder(question)
@@ -210,7 +212,7 @@ def test(epoch):
             n = min(batch_size, 4)
             if args.dataset == 'clevr':
                 pad_question, lengths = pad_packed_sequence(question)
-                pad_question = pad_question.transpose(0,1)
+                pad_question = pad_question.transpose(0, 1)
                 question_text = [' '.join([train_loader.dataset.idx_to_word[i] for i in q]) for q in pad_question.cpu().numpy()[:n]]
                 answer_text = [train_loader.dataset.answer_idx_to_word[a] for a in answer.cpu().numpy()[:n]]
                 text = []
@@ -222,21 +224,22 @@ def test(epoch):
                 text = []
                 for j, (q, a, p) in enumerate(zip(question, answer, pred)):
                     text.append('Quesetion color :{} / Quesetion type :{} / Answer: {} / Pred: {}'.format(
-                        train_loader.dataset.idx_to_color[q.cpu().numpy()[0]], train_loader.dataset.idx_to_question[q.cpu().numpy()[1]], 
+                        train_loader.dataset.idx_to_color[q.cpu().numpy()[0]], train_loader.dataset.idx_to_question[q.cpu().numpy()[1]],
                         train_loader.dataset.idx_to_answer[a.item()], train_loader.dataset.idx_to_answer[p.item()]))
                 writer.add_image('Image', torch.cat([image[:n]]), epoch)
                 writer.add_text('QA', '\n'.join(text), epoch)
     print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
         test_loss / len(test_loader.dataset), correct / len(test_loader.dataset)))
-    writer.add_scalar('Test loss',  test_loss / len(test_loader.dataset), epoch)
-    writer.add_scalar('Test accuracy',  correct / len(test_loader.dataset), epoch)
+    writer.add_scalar('Test loss', test_loss / len(test_loader.dataset), epoch)
+    writer.add_scalar('Test accuracy', correct / len(test_loader.dataset), epoch)
+
 
 for epoch in range(args.epochs):
     train(epoch)
     test(epoch)
-    torch.save(g_theta, log + 'g_theta.pt')
-    torch.save(f_phi, log + 'f_phi.pt')
-    torch.save(conv, log + 'conv.pt')
-    torch.save(text_encoder, log + 'text_encoder.pt')
+    torch.save(g_theta.state_dict(), log + 'g_theta.pt')
+    torch.save(f_phi.state_dict(), log + 'f_phi.pt')
+    torch.save(conv.state_dict(), log + 'conv.pt')
+    torch.save(text_encoder.state_dict(), log + 'text_encoder.pt')
     print('Model saved in ', log)
 writer.close()
