@@ -15,8 +15,9 @@ from collections import defaultdict
 import h5py
 import vqa_util
 
+
 def collate_text(list_inputs):
-    list_inputs.sort(key=lambda x:len(x[1]), reverse = True)
+    list_inputs.sort(key=lambda x: len(x[1]), reverse=True)
     images = torch.Tensor()
     questions = []
     answers = torch.Tensor().to(torch.long)
@@ -27,46 +28,49 @@ def collate_text(list_inputs):
     questions_packed = pack_sequence(questions)
     return images, questions_packed, answers
 
-def train_loader(data, data_directory = '/home/sungwonlyu/data/', batch_size = 128, input_h = 128, input_w = 128, cpu_num = 0):
+
+def train_loader(data, data_directory='/home/sungwonlyu/data/', batch_size=128, input_h=128, input_w=128, cpu_num=0):
     if data == 'clevr':
         train_dataloader = DataLoader(
-            Clevr(data_directory + data + '/', train=True, 
-            transform = transforms.Compose([transforms.Resize((input_h, input_w)),
+            Clevr(data_directory + data + '/', train=True,
+                  transform=transforms.Compose([transforms.Resize((input_h, input_w)),
                                                 transforms.ToTensor()])),
             batch_size=batch_size, shuffle=True,
-            num_workers = cpu_num,
-            collate_fn = collate_text)
+            num_workers=cpu_num,
+            collate_fn=collate_text)
     elif data == 'sortofclevr':
         train_dataloader = DataLoader(
             SortOfClevr(data_directory + data + '/', train=True),
-            batch_size=batch_size, shuffle=True)        
+            batch_size=batch_size, shuffle=True)
     return train_dataloader
 
-def test_loader(data, data_directory = '/home/sungwonlyu/data', batch_size = 128, input_h = 128, input_w = 128, cpu_num = 0):
+
+def test_loader(data, data_directory='/home/sungwonlyu/data', batch_size=128, input_h=128, input_w=128, cpu_num=0):
     if data == 'clevr':
         test_dataloader = DataLoader(
-            Clevr(data_directory + data + '/', train=False, 
-            transform = transforms.Compose([transforms.Resize((input_h, input_w)),
+            Clevr(data_directory + data + '/', train=False,
+                  transform=transforms.Compose([transforms.Resize((input_h, input_w)),
                                                 transforms.ToTensor()])),
             batch_size=batch_size, shuffle=True,
-            num_workers = cpu_num,
-            collate_fn = collate_text)
+            num_workers=cpu_num,
+            collate_fn=collate_text)
     elif data == 'sortofclevr':
         test_dataloader = DataLoader(
-            SortOfClevr(data_directory + data + '/', train=False), 
+            SortOfClevr(data_directory + data + '/', train=False),
             batch_size=batch_size, shuffle=True)
     return test_dataloader
 
 
 class Clevr(Dataset):
     """Clevr dataset."""
-    def __init__(self, root_dir, train = True, transform = None):
+
+    def __init__(self, root_dir, train=True, transform=None):
         self.root_dir = root_dir
         # self.mode = 'sample'
         self.mode = 'train' if train else 'val'
         self.transform = transform
-        self.q_dir = self.root_dir + 'questions/'+ 'CLEVR_{}_questions.json'.format(self.mode)
-        self.img_dir = self.root_dir + 'images/'+ '{}/'.format(self.mode)
+        self.q_dir = self.root_dir + 'questions/' + 'CLEVR_{}_questions.json'.format(self.mode)
+        self.img_dir = self.root_dir + 'images/' + '{}/'.format(self.mode)
         if self.mode == 'sample':
             self.img_dir = self.root_dir + 'images/train/'
         self.load_data()
@@ -96,7 +100,7 @@ class Clevr(Dataset):
                 a_corpus.add(a_text)
                 qa_list[mode].append((img_dir, q_words, a_text))
 
-        word_to_idx = {"PAD":0, "SOS": 1, "EOS": 2}
+        word_to_idx = {"PAD": 0, "SOS": 1, "EOS": 2}
         idx_to_word = {0: "PAD", 1: "SOS", 2: "EOS"}
         answer_word_to_idx = dict()
         answer_idx_to_word = dict()
@@ -110,17 +114,17 @@ class Clevr(Dataset):
             answer_word_to_idx[word] = idx
             answer_idx_to_word[idx] = word
         #     # single answer, so no padded values of 0 are created. thus index starts with 0
-        data_dict = {'question': {'word_to_idx' : word_to_idx,
-                                    'idx_to_word' : idx_to_word},
-                        'answer': {'word_to_idx' : answer_word_to_idx,
-                                    'idx_to_word' : answer_idx_to_word}}
+        data_dict = {'question': {'word_to_idx': word_to_idx,
+                                  'idx_to_word': idx_to_word},
+                     'answer': {'word_to_idx': answer_word_to_idx,
+                                'idx_to_word': answer_idx_to_word}}
         with open('data_dict.pkl', 'wb') as file:
             pickle.dump(data_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
         print('data_dict.pkl saved')
 
         qa_idx_data = defaultdict(list)
         for mode in modes:
-            for img_dir, q_word_list, answer_word in qa_list[mode]:                  
+            for img_dir, q_word_list, answer_word in qa_list[mode]:
                 q = [word_to_idx[word] for word in q_word_list]
                 q.insert(0, 1)
                 q.append(2)
@@ -154,9 +158,11 @@ class Clevr(Dataset):
             image = self.transform(image)
         return image, q, a
 
+
 class SortOfClevr(Dataset):
     """SortOfClevr dataset."""
-    def __init__(self, root_dir, train = True, transform = None):
+
+    def __init__(self, root_dir, train=True, transform=None):
         self.root_dir = root_dir
         self.mode = 'train' if train else 'val'
         self.transform = transform
@@ -169,7 +175,7 @@ class SortOfClevr(Dataset):
         for key, val in file.items():
             image = val['image'].value
             image.astype(float)
-            image = torch.from_numpy(image.transpose(2,0,1)).to(torch.float)
+            image = torch.from_numpy(image.transpose(2, 0, 1)).to(torch.float)
             question = np.where(val['question'].value)[0]
             question[1] = question[1] - vqa_util.NUM_COLOR
             question = torch.Tensor(question).to(torch.long)
@@ -189,11 +195,12 @@ class SortOfClevr(Dataset):
 
     def __getitem__(self, idx):
         image, q, a = self.data_list[idx]
-        return image, q, a
+        return image, q, a.squeeze(1)
+
 
 def debug():
     start = time()
-    train_dataloader = train_loader('sortofclevr', batch_size = 4)
+    train_dataloader = train_loader('sortofclevr', batch_size=4)
     b = time() - start
     print(b)
     start = time()
@@ -202,15 +209,17 @@ def debug():
     for i, q, a in train_dataloader:
         n += 1
         print(i)
-        print(q) 
+        print(q)
         print(a)
         # b = time() - start
         # print(b)
-        # sum_ += b   
+        # sum_ += b
         # start = time()
     print(sum_)
+
+
 def make_data():
-    train_dataloader = train_loader('sortclevr', batch_size = 4)
+    train_dataloader = train_loader('sortclevr', batch_size=4)
     train_dataloader.dataset.make_data()
 # make_data()
 # debug()
