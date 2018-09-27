@@ -195,7 +195,8 @@ class SortOfClevr(Dataset):
 
     def __getitem__(self, idx):
         image, q, a = self.data_list[idx]
-        return image, q, a.squeeze(1)
+        print(a.size())
+        return image, q, a
 
 
 def debug():
