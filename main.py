@@ -52,7 +52,7 @@ else:
     torch.cuda.set_device(args.device)
 
 config_list = [args.name, args.dataset, args.epochs, args.batch_size, 
-                args.lr, args.lr_term, arg.lr_inc, args.device,
+                args.lr, args.lr_term, args.lr_inc, args.device,
                'inp', args.channel_size, args.input_h, args.input_w,
                'cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer,
                'te', args.te_embedding, args.te_hidden, args.te_layer,
