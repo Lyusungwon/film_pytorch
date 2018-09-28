@@ -125,7 +125,7 @@ def train(epoch):
     f_phi.train()
     conv.train()
     text_encoder.train()
-    if (epochs + 1) % args.lr_term == 0:
+    if (epoch + 1) % args.lr_term == 0:
         for params in optimizer.param_groups:
             params['lr'] = max(0.1, params['lr'] * args.lr_inc)
     for batch_idx, (image, question, answer) in enumerate(train_loader):
