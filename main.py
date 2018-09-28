@@ -88,7 +88,8 @@ if args.load_model != '000000000000':
     text_encoder.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/text_encoder.pt'))
     gt.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/gt.pt'))
     fp.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/fp.pt'))
-    args.time_stamep = args.load_mode[:12]
+    args.time_stamep = args.load_model[:12]
+    print('Model {} loaded.'.format(args.load_model))
 
 log = args.log_directory + args.name + '/' + args.time_stamp + config + '/'
 writer = SummaryWriter(log)
@@ -126,8 +127,11 @@ def train(epoch):
     conv.train()
     text_encoder.train()
     if (epoch + 1) % args.lr_term == 0:
+        lr = 0
         for params in optimizer.param_groups:
-            params['lr'] = max(0.1, params['lr'] * args.lr_inc)
+            lr = min(0.1, params['lr'] * args.lr_inc)
+            params['lr'] = lr
+        print("Learning rate updated to {}".format(lr))
     for batch_idx, (image, question, answer) in enumerate(train_loader):
         # a = time.time() - start_time
         # print("load", a)

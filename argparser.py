@@ -1,6 +1,7 @@
 import argparse
 import datetime
-
+from pathlib import Path
+home = str(Path.home())
 
 def default_parser():
     parser = argparse.ArgumentParser(description='parser')
@@ -14,9 +15,9 @@ def default_parser():
                         help='learning rate (default: 2.5e-4)')
     parser.add_argument('--lr-inc', type=float, default=2, metavar='N',
                         help='learning rate (default: 2.5e-4)')
-    parser.add_argument('--data-directory', type=str, default='/home/sungwon/data/', metavar='N',
+    parser.add_argument('--data-directory', type=str, default = home + '/data/', metavar='N',
                         help='directory of data')
-    parser.add_argument('--log-directory', type=str, default='/home/sungwon/experiment/', metavar='N',
+    parser.add_argument('--log-directory', type=str, default = home + '/experiment/', metavar='N',
                         help='log directory')
     parser.add_argument('--device', type=int, default=0, metavar='N',
                         help='number of cuda')
