@@ -18,7 +18,7 @@ import pickle
 parser = argparser.default_parser()
 # Input
 parser.add_argument('--name', type=str, default='rn')
-parser.add_argument('--dataset', type=str, default='sortofclevr')
+parser.add_argument('--dataset', type=str, default='clevr')
 parser.add_argument('--channel-size', type=int, default=3)
 parser.add_argument('--input-h', type=int, default=128)
 parser.add_argument('--input-w', type=int, default=128)
@@ -36,7 +36,7 @@ parser.add_argument('--gt-hidden', type=int, default=256)
 parser.add_argument('--gt-layer', type=int, default=4)
 # f phi
 parser.add_argument('--fp-hidden', type=int, default=256)
-parser.add_argument('--fp-dropout', type=int, default=4)
+parser.add_argument('--fp-dropout', type=int, default=2)
 parser.add_argument('--fp-dropout_rate', type=float, default=0.5)
 parser.add_argument('--fp-layer', type=int, default=3)
 
@@ -51,7 +51,8 @@ else:
     device = torch.device('cuda:{}'.format(args.device))
     torch.cuda.set_device(args.device)
 
-config_list = [args.name, args.dataset, args.epochs, args.batch_size, args.lr, args.device,
+config_list = [args.name, args.dataset, args.epochs, args.batch_size, 
+                args.lr, args.lr_term, arg.lr_inc, args.device,
                'inp', args.channel_size, args.input_h, args.input_w,
                'cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer,
                'te', args.te_embedding, args.te_hidden, args.te_layer,
@@ -92,7 +93,7 @@ if args.load_model != '000000000000':
 log = args.log_directory + args.name + '/' + args.time_stamp + config + '/'
 writer = SummaryWriter(log)
 
-optimizer = optim.Adam(text_encoder.parameters(), lr=args.lr)
+optimizer = optim.Adam(list(conv.parameters()) + list(g_theta.parameters()) + list(f_phi.parameters()) + list(text_encoder.parameters()), lr=args.lr)
 
 
 def object_pair(images, questions):
@@ -124,6 +125,9 @@ def train(epoch):
     f_phi.train()
     conv.train()
     text_encoder.train()
+    if (epochs + 1) % args.lr_term == 0:
+        for params in optimizer.param_groups:
+            params['lr'] = max(0.1, params['lr'] * args.lr_inc)
     for batch_idx, (image, question, answer) in enumerate(train_loader):
         # a = time.time() - start_time
         # print("load", a)
