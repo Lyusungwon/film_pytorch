@@ -87,7 +87,7 @@ if args.load_model != '000000000000':
     text_encoder.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/text_encoder.pt'))
     g_theta.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/g_theta.pt'))
     f_phi.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/f_phi.pt'))
-    args.time_stamep = args.load_model[:12]
+    args.time_stamp = args.load_model[:12]
     print('Model {} loaded.'.format(args.load_model))
 
 log = args.log_directory + args.name + '/' + args.time_stamp + config + '/'
