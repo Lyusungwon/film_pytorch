@@ -243,9 +243,9 @@ def test(epoch):
     writer.add_scalar('Test accuracy', correct / len(test_loader.dataset), epoch)
 
 
-for epoch in range(args.epochs):
-    train(args.start_epoch + epoch)
-    test(args.start_epoch + epoch)
+for epoch in range(args.start_epoch, args.start_epoch + args.epochs):
+    train(epoch)
+    test(epoch)
     torch.save(g_theta.state_dict(), log + 'g_theta.pt')
     torch.save(f_phi.state_dict(), log + 'f_phi.pt')
     torch.save(conv.state_dict(), log + 'conv.pt')
