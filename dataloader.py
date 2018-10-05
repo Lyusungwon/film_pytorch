@@ -266,7 +266,7 @@ class SortOfClevr2(Dataset):
             q = np.where(q)[0]
             q[1] = q[2] - 5
             q = q[:2]
-        image = torch.from_numpy(image.transpose(2, 0, 1)).float()
+        image = torch.from_numpy(image.transpose(2, 0, 1)).float() / 255
 
         q = torch.from_numpy(q).long()
         return image, q, a
