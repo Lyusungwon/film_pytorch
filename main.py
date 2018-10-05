@@ -257,7 +257,7 @@ def test(epoch):
 
 
 for epoch in range(args.start_epoch, args.start_epoch + args.epochs):
-    # train(epoch)
+    train(epoch)
     test(epoch)
     torch.save(g_theta.state_dict(), log + 'g_theta.pt')
     torch.save(f_phi.state_dict(), log + 'f_phi.pt')
