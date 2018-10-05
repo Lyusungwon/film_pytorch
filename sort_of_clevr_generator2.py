@@ -14,7 +14,8 @@ question_size = 11  ##6 for one-hot vector of color, 2 for question type, 3 for 
 
 nb_questions = 10
 
-dirs = '/home/sungwonlyu/data/sortofclevr2/'
+home = str(Path.home())
+dirs = home + '/data/sortofclevr2/'
 
 colors = [
     (255, 0, 0),  ##r
