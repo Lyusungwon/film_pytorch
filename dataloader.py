@@ -3,11 +3,8 @@ import torch
 from torchvision import datasets, transforms
 from torch.nn.utils.rnn import pad_sequence, pack_sequence
 import pickle
-import os
-import pandas as pd
 import numpy as np
 from PIL import Image
-from imageio import imread
 import json
 from time import time
 import re
@@ -41,8 +38,13 @@ def train_loader(data, data_directory = home + '/data/', batch_size = 128, input
     elif data == 'sortofclevr':
         train_dataloader = DataLoader(
             SortOfClevr(data_directory + data + '/', train=True),
-            batch_size=batch_size, shuffle=True)        
+            batch_size=batch_size, shuffle=True)
+    elif data == 'sortofclevr2':
+        train_dataloader = DataLoader(
+            SortOfClevr2(data_directory + data + '/', train=True),
+            batch_size=batch_size, shuffle=True)
     return train_dataloader
+
 
 def test_loader(data, data_directory =  home + '/data/', batch_size = 128, input_h = 128, input_w = 128, cpu_num = 0):
     if data == 'clevr':
@@ -56,6 +58,10 @@ def test_loader(data, data_directory =  home + '/data/', batch_size = 128, input
     elif data == 'sortofclevr':
         test_dataloader = DataLoader(
             SortOfClevr(data_directory + data + '/', train=False), 
+            batch_size=batch_size, shuffle=True)
+    elif data == 'sortofclevr2':
+        test_dataloader = DataLoader(
+            SortOfClevr2(data_directory + data + '/', train=False),
             batch_size=batch_size, shuffle=True)
     return test_dataloader
 
@@ -84,7 +90,7 @@ class Clevr(Dataset):
             if mode == 'sample':
                 img_dir = self.root_dir + 'images/train/'
             ann_dir = self.root_dir + 'questions/CLEVR_{}_questions.json'.format(mode)
-            with open(ann_dir) as f:
+            with open(self.root_dir + ann_dir) as f:
                 q_list[mode] = json.load(f)['questions']
             for q_obj in q_list[mode]:
                 img_dir = q_obj['image_filename']
@@ -116,7 +122,7 @@ class Clevr(Dataset):
                                     'idx_to_word' : idx_to_word},
                         'answer': {'word_to_idx' : answer_word_to_idx,
                                     'idx_to_word' : answer_idx_to_word}}
-        with open('data_dict.pkl', 'wb') as file:
+        with open(self.root_dir + 'data_dict.pkl', 'wb') as file:
             pickle.dump(data_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
         print('data_dict.pkl saved')
 
@@ -130,14 +136,14 @@ class Clevr(Dataset):
                 a = answer_word_to_idx[answer_word]
                 a = torch.from_numpy(np.array(a)).view(1)
                 qa_idx_data[mode].append((img_dir, q, a))
-            with open('qa_idx_data_{}.pkl'.format(mode), 'wb') as file:
+            with open(self.root_dir + 'qa_idx_data_{}.pkl'.format(mode), 'wb') as file:
                 pickle.dump(qa_idx_data[mode], file, protocol=pickle.HIGHEST_PROTOCOL)
             print('qa_idx_data_{}.pkl saved'.format(mode))
 
     def load_data(self):
-        with open('qa_idx_data_{}.pkl'.format(self.mode), 'rb') as file:
+        with open(self.root_dir + 'qa_idx_data_{}.pkl'.format(self.mode), 'rb') as file:
             self.qa_idx_data = pickle.load(file)
-        with open('data_dict.pkl', 'rb') as file:
+        with open(self.root_dir + 'data_dict.pkl', 'rb') as file:
             self.data_dict = pickle.load(file)
         self.word_to_idx = self.data_dict['question']['word_to_idx']
         self.idx_to_word = self.data_dict['question']['idx_to_word']
@@ -157,7 +163,7 @@ class Clevr(Dataset):
         return image, q, a
 
 class SortOfClevr(Dataset):
-    """SortOfClevr dataset."""
+    """SortOfClevr  dataset."""
     def __init__(self, root_dir, train = True, transform = None):
         self.root_dir = root_dir
         self.mode = 'train' if train else 'val'
@@ -193,17 +199,89 @@ class SortOfClevr(Dataset):
         image, q, a = self.data_list[idx]
         return image, q, a
 
+class SortOfClevr2(Dataset):
+    """SortOfClevr2 dataset."""
+    def __init__(self, root_dir, train = True, transform = None):
+        self.root_dir = root_dir
+        self.mode = 'train' if train else 'val'
+        self.transform = transform
+        self.data_dir = self.root_dir + 'sort-of-clevr2-{}.pickle'.format(self.mode)
+        self.load_data()
+
+    def load_data(self):
+        with open(self.data_dir, 'rb') as f:
+            self.data = pickle.load(f)
+        self.idx_to_color = {
+                                0: 'r',
+                                1: 'g',
+                                2: 'b',
+                                3: 'o',
+                                4: 'v',
+                                5: 'y',
+                            }
+        self.idx_to_question = {
+                                0: 's',
+                                1: 'h',
+                                2: 'v',
+                                3: 'cl',
+                                4: 'f',
+                                5: 'co'
+                            }
+        self.idx_to_answer = {
+                                0: 'y',
+                                1: 'n',
+                                2: 'r',
+                                3: 'c',
+                                4: '1',
+                                5: '2',
+                                6: '3',
+                                7: '4',
+                                8: '5',
+                                9: '6'
+                            }
+        self.c_size = len(self.idx_to_color)
+        self.q_size = len(self.idx_to_question)
+        self.a_size = len(self.idx_to_answer)
+
+    def __len__(self):
+        return len(self.data * 20)
+
+    def __getitem__(self, idx):
+        image, rel, non_rel = self.data[idx//20]
+        # print(image)
+        # image = transforms.toTensor(image)
+        index = idx % 20
+        if index < 10:
+            q, a = non_rel
+            q = q[index]
+            a = a[index]
+            q = np.where(q)[0]
+            q[1] = q[2] - 8
+            q = q[:2]
+
+        else:
+            q, a = rel
+            q = q[index - 10]
+            a = a[index - 10]
+            q = np.where(q)[0]
+            q[1] = q[2] - 5
+            q = q[:2]
+        image = torch.from_numpy(image.transpose(2, 0, 1)).float()
+
+        q = torch.from_numpy(q).long()
+        return image, q, a
+
 def debug():
     start = time()
-    train_dataloader = train_loader('sortofclevr', batch_size = 4)
+    test_dataloader = train_loader('sortofclevr2', batch_size = 4)
     b = time() - start
     print(b)
     start = time()
     sum_ = 0
     n = 0
-    for i, q, a in train_dataloader:
+    for i, q, a in test_dataloader:
         n += 1
-        print(i)
+        print(i.size())
         print(q) 
         print(a)
         # b = time() - start
@@ -212,7 +290,7 @@ def debug():
         # start = time()
     print(sum_)
 def make_data():
-    train_dataloader = train_loader('sortclevr', batch_size = 4)
-    train_dataloader.dataset.make_data()
+    train_dataloader = train_loader('sortclevr2', batch_size = 4)
+    train_dataloader.dataset.load_data()
 # make_data()
 # debug()

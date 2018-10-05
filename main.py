@@ -2,22 +2,18 @@ import sys
 sys.path.append('../utils/')
 import argparser
 import dataloader
-import model
 import time
-import os
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
 from tensorboardX import SummaryWriter
 import model
-import numpy as np
-import pickle
 
 parser = argparser.default_parser()
 # Input
 parser.add_argument('--name', type=str, default='rn')
-parser.add_argument('--dataset', type=str, default='clevr')
+parser.add_argument('--dataset', type=str, default='sortofclevr2')
 parser.add_argument('--channel-size', type=int, default=3)
 parser.add_argument('--input-h', type=int, default=128)
 parser.add_argument('--input-w', type=int, default=128)
@@ -69,6 +65,7 @@ if args.dataset == 'clevr':
     gt_layout.insert(0, (args.cv_filter + 2) * 2 + args.te_hidden)
 else:
     gt_layout.insert(0, (args.cv_filter + 2) * 2 + args.te_embedding * 2)
+
 fp_layout = [args.fp_hidden for i in range(args.fp_layer)]
 fp_layout.append(train_loader.dataset.a_size)
 
@@ -78,7 +75,8 @@ f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last=True).t
 if args.dataset == 'clevr':
     text_encoder = model.Text_encoder(train_loader.dataset.q_size, args.te_embedding, args.te_hidden, args.te_layer).to(device)
 else:
-    text_encoder = model.Text_embedding(train_loader.dataset.q_size, train_loader.dataset.c_size, args.te_embedding).to(device)
+    text_encoder = model.Text_embedding(train_loader.dataset.c_size, train_loader.dataset.q_size, args.te_embedding).to(device)
+
 # with open('data_dict.pkl', 'rb') as file:
 #     data_dict = pickle.load(file)
 
@@ -106,12 +104,17 @@ def object_pair(images, questions):
     y_coordinate = torch.linspace(-1, 1, w).view(1, 1, w, 1).expand(n, h, w, 1).contiguous().view(n, o, 1).to(device)
     images = images.view(n, c, o).transpose(1, 2)
     images = torch.cat([images, x_coordinate, y_coordinate], 2)
-    images1 = images.unsqueeze(1).expand(n, o, o, c + 2).contiguous().view(n, o**2, c + 2)
-    images2 = images.unsqueeze(2).expand(n, o, o, c + 2).contiguous().view(n, o**2, c + 2)
-    questions = questions.unsqueeze(1).expand(n, o**2, hd)
-    pairs = torch.cat([images1, images2, questions], 2)
+    images1 = images.unsqueeze(1).expand(n, o, o, c + 2).contiguous()
+    images2 = images.unsqueeze(2).expand(n, o, o, c + 2).contiguous()
+    questions = questions.unsqueeze(1).unsqueeze(2).expand(n, o, o, hd)
+    pairs = torch.cat([images1, images2, questions], 3)
     return pairs
 
+def lower_sum(relations):
+    n, h, w, l = relations.size()
+    mask = torch.ones([h,w]).tril(diagonal=-1).unsqueeze(0).unsqueeze(3).to(device)
+    relations = relations * mask
+    return relations.sum(2).sum(1)
 
 def train(epoch):
     epoch_start_time = time.time()
@@ -144,11 +147,11 @@ def train(epoch):
             question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
             question = question.to(device)
-            answer = answer.squeeze(1)
+            # answer = answer.squeeze(1)
         questions = text_encoder(question)
         pairs = object_pair(objects, questions)
         relations = g_theta(pairs)
-        relations_sum = relations.sum(1)
+        relations_sum = lower_sum(relations)
         output = f_phi(relations_sum)
         loss = F.cross_entropy(output, answer)
         loss.backward()
@@ -195,7 +198,10 @@ def test(epoch):
     conv.eval()
     text_encoder.eval()
     test_loss = 0
-    correct = 0
+    rel_num = 0
+    non_rel_num = 0
+    rel_correct = 0
+    non_rel_correct = 0
     for batch_idx, (image, question, answer) in enumerate(test_loader):
         start_time = time.time()
         batch_size = image.size()[0]
@@ -206,17 +212,24 @@ def test(epoch):
             question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
             question = question.to(device)
-            answer = answer.squeeze(1)
+            # answer = answer.squeeze(1)
         questions = text_encoder(question)
         pairs = object_pair(objects, questions)
         relations = g_theta(pairs)
-        relations_sum = relations.sum(1)
+        relations_sum = lower_sum(relations)
         output = f_phi(relations_sum)
         loss = F.cross_entropy(output, answer)
         test_loss += loss.item()
         pred = torch.max(output.data, 1)[1]
-        correct += (pred == answer).sum().item()
-
+        correct = (pred == answer)
+        non_rel_idx = question[:, 1] < 3
+        rel_idx = 1 - non_rel_idx
+        print(non_rel_idx)
+        print(rel_idx)
+        non_rel_correct += (correct * non_rel_idx).sum().item()
+        rel_correct += (correct * rel_idx).sum().item()
+        non_rel_num += non_rel_idx.sum().item()
+        rel_num += rel_idx.sum().item()
         if batch_idx == 0:
             n = min(batch_size, 4)
             if args.dataset == 'clevr':
@@ -240,11 +253,13 @@ def test(epoch):
     print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
         test_loss / len(test_loader.dataset), correct / len(test_loader.dataset)))
     writer.add_scalar('Test loss', test_loss / len(test_loader.dataset), epoch)
-    writer.add_scalar('Test accuracy', correct / len(test_loader.dataset), epoch)
+    writer.add_scalar('Test non-rel-accuracy', non_rel_correct / non_rel_num, epoch)
+    writer.add_scalar('Test rel-accuracy', rel_correct / rel_num, epoch)
+    writer.add_scalar('Test total-accuracy', (rel_correct + non_rel_correct) / len(test_loader.dataset), epoch)
 
 
 for epoch in range(args.start_epoch, args.start_epoch + args.epochs):
-    train(epoch)
+    # train(epoch)
     test(epoch)
     torch.save(g_theta.state_dict(), log + 'g_theta.pt')
     torch.save(f_phi.state_dict(), log + 'f_phi.pt')
