@@ -224,8 +224,6 @@ def test(epoch):
         correct = (pred == answer)
         non_rel_idx = question[:, 1] < 3
         rel_idx = 1 - non_rel_idx
-        print(non_rel_idx)
-        print(rel_idx)
         non_rel_correct += (correct * non_rel_idx).sum().item()
         rel_correct += (correct * rel_idx).sum().item()
         non_rel_num += non_rel_idx.sum().item()
@@ -251,7 +249,7 @@ def test(epoch):
                 writer.add_image('Image', torch.cat([image[:n]]), epoch)
                 writer.add_text('QA', '\n'.join(text), epoch)
     print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
-        test_loss / len(test_loader.dataset), correct / len(test_loader.dataset)))
+        test_loss / len(test_loader.dataset), (rel_correct + non_rel_correct) / len(test_loader.dataset)))
     writer.add_scalar('Test loss', test_loss / len(test_loader.dataset), epoch)
     writer.add_scalar('Test non-rel-accuracy', non_rel_correct / non_rel_num, epoch)
     writer.add_scalar('Test rel-accuracy', rel_correct / rel_num, epoch)
