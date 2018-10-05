@@ -4,6 +4,7 @@ import numpy as np
 import random
 # import cPickle as pickle
 import pickle
+from pathlib import Path
 
 train_size = 9800
 test_size = 200
