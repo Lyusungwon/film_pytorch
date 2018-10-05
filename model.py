@@ -28,15 +28,17 @@ class MLP(nn.Module):
         return x
 
 class Conv(nn.Module):
-    def __init__(self, layer_config, channel_size):
+    def __init__(self, layer_config, channel_size, batch_norm):
         super(Conv, self).__init__()
         self.layer_config = layer_config
         self.channel_size = channel_size
+        self.batch_norm = batch_norm
         prev_filter = self.channel_size
         net = nn.ModuleList([])
         for num_filter, kernel_size, stride in layer_config:
             net.append(nn.Conv2d(prev_filter, num_filter, kernel_size, stride, (kernel_size - 1)//2))
-            net.append(nn.BatchNorm2d(num_filter))
+            if batch_norm:
+                net.append(nn.BatchNorm2d(num_filter))
             net.append(nn.ReLU(inplace=True))
             prev_filter = num_filter
         self.net = nn.Sequential(*net)
