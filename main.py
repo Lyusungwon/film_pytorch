@@ -10,6 +10,7 @@ from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
 from tensorboardX import SummaryWriter
 import model
 from collections import defaultdict
+import cv2
 
 parser = argparser.default_parser()
 # Input
@@ -79,9 +80,6 @@ if args.dataset == 'clevr':
     text_encoder = model.Text_encoder(train_loader.dataset.q_size, args.te_embedding, args.te_hidden, args.te_layer).to(device)
 else:
     text_encoder = model.Text_embedding(train_loader.dataset.c_size, train_loader.dataset.q_size, args.te_embedding).to(device)
-
-# with open('data_dict.pkl', 'rb') as file:
-#     data_dict = pickle.load(file)
 
 if args.load_model != '000000000000':
     conv.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/conv.pt'))
@@ -218,10 +216,10 @@ def test(epoch):
         correct = (pred == answer)
         for i in range(6):
             idx = question[:, 1] == i
-            q_correct[i] += idx.sum().item()
-            q_num[i] += (correct * idx).sum().item()
+            q_correct[i] += (correct * idx).sum().item()
+            q_num[i] += idx.sum().item()
         if batch_idx == 0:
-            n = min(batch_size, 1)
+            n = min(batch_size, 4)
             if args.dataset == 'clevr':
                 pad_question, lengths = pad_packed_sequence(question)
                 pad_question = pad_question.transpose(0, 1)
@@ -233,25 +231,31 @@ def test(epoch):
                 writer.add_image('Image', torch.cat([image[:n]]), epoch)
                 writer.add_text('QA', '\n'.join(text), epoch)
             else:
-                text = []
-                for j, (q, a, p) in enumerate(zip(question, answer, pred)):
-                    text.append('Quesetion color :{} / Quesetion type :{} / Answer: {} / Pred: {}'.format(
-                        train_loader.dataset.idx_to_color[q.cpu().numpy()[0]], train_loader.dataset.idx_to_question[q.cpu().numpy()[1]],
-                        train_loader.dataset.idx_to_answer[a.item()], train_loader.dataset.idx_to_answer[p.item()]))
-                writer.add_image('Image', torch.cat([image[:n]]), epoch)
-                writer.add_text('QA', '\n'.join(text), epoch)
+                image = F.pad(image[:n], (0, 0, 0, 20), mode='constant', value=1).transpose(1,2).transpose(2,3)
+                image = image.cpu().numpy()
+                for i in range(n):
+                    cv2.line(image[i], (64, 0), (64, 128), (0, 0, 0), 1)
+                    cv2.line(image[i], (0, 64), (128, 64), (0, 0, 0), 1)
+                    cv2.line(image[i], (0, 128), (128, 128), (0, 0, 0), 1)
+                    cv2.putText(image[i], '{} {} {} {}'.format(
+                        train_loader.dataset.idx_to_color[question[i, 0].item()],
+                        train_loader.dataset.idx_to_question[question[i, 1].item()],
+                        train_loader.dataset.idx_to_answer[answer[i].item()],
+                        train_loader.dataset.idx_to_answer[pred[i].item()]),
+                        (2, 143), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+                image = torch.from_numpy(image).transpose(2,3).transpose(1,2)
+                writer.add_image('Image', torch.cat([image]), epoch)
     print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
         test_loss / len(test_loader.dataset), sum(q_correct.values())/len(test_loader.dataset)))
     writer.add_scalar('Test loss', test_loss / len(test_loader.dataset), epoch)
     q_acc = {}
     for i in range(6):
-        q_acc[str(i)] = q_correct[i]/q_num[i]
-    writer.add_scalars('Test accuracy per question/questions', q_acc, epoch)
-    writer.add_scalar('Test total-accuracy', sum(q_correct.values())/len(test_loader.dataset), epoch)
-
+        q_acc['question {}'.format(str(i))] = q_correct[i]/q_num[i]
+    writer.add_scalars('Test accuracy per question', q_acc, epoch)
+    writer.add_scalar('Test total accuracy', sum(q_correct.values())/len(test_loader.dataset), epoch)
 
 for epoch in range(args.start_epoch, args.start_epoch + args.epochs):
-    train(epoch)
+    # train(epoch)
     test(epoch)
     torch.save(g_theta.state_dict(), log + 'g_theta.pt')
     torch.save(f_phi.state_dict(), log + 'f_phi.pt')
