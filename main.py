@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
 from tensorboardX import SummaryWriter
 import model
+from collections import defaultdict
 
 parser = argparser.default_parser()
 # Input
@@ -113,7 +114,7 @@ def object_pair(images, questions):
 
 def lower_sum(relations):
     n, h, w, l = relations.size()
-    mask = torch.ones([h,w]).tril(diagonal=-1).unsqueeze(0).unsqueeze(3).to(device)
+    mask = torch.ones([h,w]).tril().unsqueeze(0).unsqueeze(3).to(device)
     relations = relations * mask
     return relations.sum(2).sum(1)
 
@@ -132,7 +133,7 @@ def train(epoch):
     if (epoch + 1) % args.lr_term == 0:
         lr = 0
         for params in optimizer.param_groups:
-            lr = min(0.1, params['lr'] * args.lr_inc)
+            lr = min(0.001, params['lr'] * args.lr_inc)
             params['lr'] = lr
         print("Learning rate updated to {}".format(lr))
     for batch_idx, (image, question, answer) in enumerate(train_loader):
@@ -199,12 +200,9 @@ def test(epoch):
     conv.eval()
     text_encoder.eval()
     test_loss = 0
-    rel_num = 0
-    non_rel_num = 0
-    rel_correct = 0
-    non_rel_correct = 0
+    q_correct = defaultdict(lambda: 0)
+    q_num = defaultdict(lambda: 0)
     for batch_idx, (image, question, answer) in enumerate(test_loader):
-        start_time = time.time()
         batch_size = image.size()[0]
         image = image.to(device)
         answer = answer.to(device)
@@ -223,14 +221,12 @@ def test(epoch):
         test_loss += loss.item()
         pred = torch.max(output.data, 1)[1]
         correct = (pred == answer)
-        non_rel_idx = question[:, 1] < 3
-        rel_idx = 1 - non_rel_idx
-        non_rel_correct += (correct * non_rel_idx).sum().item()
-        rel_correct += (correct * rel_idx).sum().item()
-        non_rel_num += non_rel_idx.sum().item()
-        rel_num += rel_idx.sum().item()
+        for i in range(6):
+            idx = question[:, 1] == i
+            q_correct[i] += idx.sum().item()
+            q_num[i] += (correct * idx).sum().item()
         if batch_idx == 0:
-            n = min(batch_size, 4)
+            n = min(batch_size, 1)
             if args.dataset == 'clevr':
                 pad_question, lengths = pad_packed_sequence(question)
                 pad_question = pad_question.transpose(0, 1)
@@ -250,11 +246,13 @@ def test(epoch):
                 writer.add_image('Image', torch.cat([image[:n]]), epoch)
                 writer.add_text('QA', '\n'.join(text), epoch)
     print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
-        test_loss / len(test_loader.dataset), (rel_correct + non_rel_correct) / len(test_loader.dataset)))
+        test_loss / len(test_loader.dataset), [q_correct[i] for i in range(6)].sum() / len(test_loader.dataset)))
     writer.add_scalar('Test loss', test_loss / len(test_loader.dataset), epoch)
-    writer.add_scalar('Test non-rel-accuracy', non_rel_correct / non_rel_num, epoch)
-    writer.add_scalar('Test rel-accuracy', rel_correct / rel_num, epoch)
-    writer.add_scalar('Test total-accuracy', (rel_correct + non_rel_correct) / len(test_loader.dataset), epoch)
+    q_acc = {}
+    for i in range(6):
+        q_acc[i] = q_correct[i]/q_num[i]
+    writer.add_scalars('Test accuracy per question/questions', q_acc, epoch)
+    writer.add_scalar('Test total-accuracy', [q_correct[i] for i in range(6)].sum()/len(test_loader.dataset), epoch)
 
 
 for epoch in range(args.start_epoch, args.start_epoch + args.epochs):

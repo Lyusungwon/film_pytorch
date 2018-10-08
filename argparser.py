@@ -11,10 +11,10 @@ def default_parser():
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--lr', type=float, default=2.5e-4, metavar='N',
                         help='learning rate (default: 2.5e-4)')
-    parser.add_argument('--lr-term', type=int, default=200, metavar='N',
-                        help='learning rate (default: 2.5e-4)')
+    parser.add_argument('--lr-term', type=int, default=500, metavar='N',
+                        help='term of increase learning rate (default: 500)')
     parser.add_argument('--lr-inc', type=float, default=2, metavar='N',
-                        help='learning rate (default: 2.5e-4)')
+                        help='increase of learning rate (default: 2)')
     parser.add_argument('--data-directory', type=str, default = home + '/data/', metavar='N',
                         help='directory of data')
     parser.add_argument('--log-directory', type=str, default = home + '/experiment/', metavar='N',
