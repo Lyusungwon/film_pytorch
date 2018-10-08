@@ -54,7 +54,8 @@ config_list = [args.name, args.dataset, args.epochs, args.batch_size,
                'cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
                'te', args.te_embedding, args.te_hidden, args.te_layer,
                'gt', args.gt_hidden, args.gt_layer,
-               'fp', args.fp_hidden, args.fp_dropout, args.fp_dropout_rate, args.fp_layer]
+               'fp', args.fp_hidden, args.fp_dropout, args.fp_dropout_rate, args.fp_layer,
+               args.memo]
 config = '_'.join(map(str, config_list))
 print("Config:", config)
 
@@ -137,9 +138,6 @@ def train(epoch):
             params['lr'] = lr
         print("Learning rate updated to {}".format(lr))
     for batch_idx, (image, question, answer) in enumerate(train_loader):
-        # a = time.time() - start_time
-        # print("load", a)
-        # start_time = time.time()
         batch_size = image.size()[0]
         optimizer.zero_grad()
         image = image.to(device)
@@ -165,9 +163,6 @@ def train(epoch):
         batch_num += batch_size
         batch_loss += loss.item()
         batch_correct += correct.item()
-        # a = time.time() - start_time
-        # print('cal', a)
-        # start_time = time.time()
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)] Loss: {:.4f} / Time: {:.4f} / Acc: {:.4f}'.format(
                 epoch,
@@ -246,13 +241,13 @@ def test(epoch):
                 writer.add_image('Image', torch.cat([image[:n]]), epoch)
                 writer.add_text('QA', '\n'.join(text), epoch)
     print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
-        test_loss / len(test_loader.dataset), [q_correct[i] for i in range(6)].sum() / len(test_loader.dataset)))
+        test_loss / len(test_loader.dataset), sum(q_correct.values())/len(test_loader.dataset)))
     writer.add_scalar('Test loss', test_loss / len(test_loader.dataset), epoch)
     q_acc = {}
     for i in range(6):
         q_acc[i] = q_correct[i]/q_num[i]
     writer.add_scalars('Test accuracy per question/questions', q_acc, epoch)
-    writer.add_scalar('Test total-accuracy', [q_correct[i] for i in range(6)].sum()/len(test_loader.dataset), epoch)
+    writer.add_scalar('Test total-accuracy', sum(q_correct.values())/len(test_loader.dataset), epoch)
 
 
 for epoch in range(args.start_epoch, args.start_epoch + args.epochs):
