@@ -245,7 +245,7 @@ def test(epoch):
     writer.add_scalar('Test loss', test_loss / len(test_loader.dataset), epoch)
     q_acc = {}
     for i in range(6):
-        q_acc[i] = q_correct[i]/q_num[i]
+        q_acc[str(i)] = q_correct[i]/q_num[i]
     writer.add_scalars('Test accuracy per question/questions', q_acc, epoch)
     writer.add_scalar('Test total-accuracy', sum(q_correct.values())/len(test_loader.dataset), epoch)
 
