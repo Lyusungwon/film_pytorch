@@ -35,7 +35,7 @@ parser.add_argument('--gt-layer', type=int, default=4)
 # f phi
 parser.add_argument('--fp-hidden', type=int, default=256)
 parser.add_argument('--fp-dropout', type=int, default=2)
-parser.add_argument('--fp-dropout_rate', type=float, default=0.5)
+parser.add_argument('--fp-dropout-rate', type=float, default=0.2)
 parser.add_argument('--fp-layer', type=int, default=3)
 
 
