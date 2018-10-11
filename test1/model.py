@@ -85,7 +85,7 @@ class SelfAttention(nn.Module):
 
     def __init__(self, n_layers, d_model, d_inner, n_head, d_k, d_v, dropout=0.1):
         super(SelfAttention, self).__init__()
-        layer_stack = nn.ModuleList([SelfAttentionLayer(d_model, d_inner, n_head, d_k, d_v, dropout=dropout) for _ in range(n_layers - 1)])
+        layer_stack = nn.ModuleList([SelfAttentionLayer(d_model, d_inner, n_head, d_k, d_v, dropout=dropout) for _ in range(n_layers)])
         self.net = nn.Sequential(*layer_stack)
         print(self.net)
 
