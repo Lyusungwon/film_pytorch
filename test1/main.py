@@ -6,11 +6,11 @@ from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
 from tensorboardX import SummaryWriter
 import model
 from collections import defaultdict
-import cv2
 import sys
 sys.path.append('../')
 import argparser
 import dataloader
+
 
 parser = argparser.default_parser()
 # Input

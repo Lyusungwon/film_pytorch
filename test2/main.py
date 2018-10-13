@@ -12,6 +12,7 @@ sys.path.append('../')
 import argparser
 import dataloader
 
+
 parser = argparser.default_parser()
 # Input
 parser.add_argument('--name', type=str, default='rn')
@@ -65,7 +66,7 @@ config_list = [args.name, args.dataset, args.epochs, args.batch_size,
                'sa', args.sa_nlayer, args.sa_inner, args.sa_dropout, args.sa_nhead, args.sa_key, args.sa_value,
                # 'gt', args.gt_hidden, args.gt_dropout, args.gt_dropout_rate, args.gt_layer,
                'fp', args.fp_hidden, args.fp_dropout, args.fp_dropout_rate, args.fp_layer,
-               args.memo]
+               'test2']
 config = '_'.join(map(str, config_list))
 print("Config:", config)
 
@@ -138,6 +139,10 @@ def train(epoch):
             question = question.to(device)
             # answer = answer.squeeze(1)
         questions = text_encoder(question)
+<<<<<<< HEAD
+=======
+        # questions = g_theta(questions)
+>>>>>>> 9f82daac77154f1ce2304a3829d36fc8858e8c44
         encoded_objects = positional_encoding(objects)
         attended_objects = self_attention(encoded_objects)
         selection = question_query(questions, attended_objects)
@@ -196,15 +201,25 @@ def test(epoch):
             question = question.to(device)
             # answer = answer.squeeze(1)
         questions = text_encoder(question)
+<<<<<<< HEAD
         encoded_objects = positional_encoding(objects)
         attended_objects = self_attention(encoded_objects)
         selection = question_query(questions, attended_objects)
         output = f_phi(selection)
+=======
+        encoded_objects = positional_encoding(objects, questions)
+        attended_objects = self_attention(encoded_objects)
+        output = f_phi(attended_objects)
+>>>>>>> 9f82daac77154f1ce2304a3829d36fc8858e8c44
         loss = F.cross_entropy(output, answer)
         test_loss += loss.item()
         pred = torch.max(output.data, 1)[1]
         correct = (pred == answer)
+<<<<<<< HEAD
         for i in range(train_loader.dataset.a_size):
+=======
+        for i in range(6):
+>>>>>>> 9f82daac77154f1ce2304a3829d36fc8858e8c44
             idx = question[:, 1] == i
             q_correct[i] += (correct * idx).sum().item()
             q_num[i] += idx.sum().item()
