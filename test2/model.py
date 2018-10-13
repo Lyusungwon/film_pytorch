@@ -44,7 +44,7 @@ class Conv(nn.Module):
 			if batch_norm:
 				self.input_h /= 2
 				self.input_w /= 2
-				net.append(nn.LayerNorm(num_filter, self.input_h, self.input_w))
+				net.append(nn.LayerNorm([num_filter, self.input_h, self.input_w]))
 			net.append(nn.ReLU(inplace=True))
 			prev_filter = num_filter
 		self.net = nn.Sequential(*net)
