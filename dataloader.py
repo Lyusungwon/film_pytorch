@@ -11,8 +11,10 @@ import re
 from collections import defaultdict
 import h5py
 import vqa_util
+import sort_of_clevr_generator2
 from pathlib import Path
 home = str(Path.home())
+
 
 def collate_text(list_inputs):
     list_inputs.sort(key=lambda x:len(x[1]), reverse = True)
@@ -26,10 +28,11 @@ def collate_text(list_inputs):
     questions_packed = pack_sequence(questions)
     return images, questions_packed, answers
 
+
 def train_loader(data, data_directory = home + '/data/', batch_size = 128, input_h = 128, input_w = 128, cpu_num = 0):
     if data == 'clevr':
         train_dataloader = DataLoader(
-            Clevr(data_directory + data + '/', train=True, 
+            Clevr(data_directory + data + '/', train=True,
             transform = transforms.Compose([transforms.Resize((input_h, input_w)),
                                                 transforms.ToTensor()])),
             batch_size=batch_size, shuffle=True,
@@ -49,7 +52,7 @@ def train_loader(data, data_directory = home + '/data/', batch_size = 128, input
 def test_loader(data, data_directory =  home + '/data/', batch_size = 128, input_h = 128, input_w = 128, cpu_num = 0):
     if data == 'clevr':
         test_dataloader = DataLoader(
-            Clevr(data_directory + data + '/', train=False, 
+            Clevr(data_directory + data + '/', train=False,
             transform = transforms.Compose([transforms.Resize((input_h, input_w)),
                                                 transforms.ToTensor()])),
             batch_size=batch_size, shuffle=True,
@@ -57,7 +60,7 @@ def test_loader(data, data_directory =  home + '/data/', batch_size = 128, input
             collate_fn = collate_text)
     elif data == 'sortofclevr':
         test_dataloader = DataLoader(
-            SortOfClevr(data_directory + data + '/', train=False), 
+            SortOfClevr(data_directory + data + '/', train=False),
             batch_size=batch_size, shuffle=True)
     elif data == 'sortofclevr2':
         test_dataloader = DataLoader(
@@ -128,7 +131,7 @@ class Clevr(Dataset):
 
         qa_idx_data = defaultdict(list)
         for mode in modes:
-            for img_dir, q_word_list, answer_word in qa_list[mode]:                  
+            for img_dir, q_word_list, answer_word in qa_list[mode]:
                 q = [word_to_idx[word] for word in q_word_list]
                 q.insert(0, 1)
                 q.append(2)
@@ -161,6 +164,7 @@ class Clevr(Dataset):
         if self.transform:
             image = self.transform(image)
         return image, q, a
+
 
 class SortOfClevr(Dataset):
     """SortOfClevr  dataset."""
@@ -211,34 +215,9 @@ class SortOfClevr2(Dataset):
     def load_data(self):
         with open(self.data_dir, 'rb') as f:
             self.data = pickle.load(f)
-        self.idx_to_color = {
-                                0: 'r',
-                                1: 'g',
-                                2: 'b',
-                                3: 'o',
-                                4: 'v',
-                                5: 'y',
-                            }
-        self.idx_to_question = {
-                                0: 's',
-                                1: 'h',
-                                2: 'v',
-                                3: 'cl',
-                                4: 'f',
-                                5: 'co'
-                            }
-        self.idx_to_answer = {
-                                0: 'y',
-                                1: 'n',
-                                2: 'r',
-                                3: 'c',
-                                4: '1',
-                                5: '2',
-                                6: '3',
-                                7: '4',
-                                8: '5',
-                                9: '6'
-                            }
+        self.idx_to_color = sort_of_clevr_generator2.color_dict
+        self.idx_to_question = sort_of_clevr_generator2.question_type_dict
+        self.idx_to_answer = sort_of_clevr_generator2.answer_dict
         self.c_size = len(self.idx_to_color)
         self.q_size = len(self.idx_to_question)
         self.a_size = len(self.idx_to_answer)
@@ -271,6 +250,7 @@ class SortOfClevr2(Dataset):
         q = torch.from_numpy(q).long()
         return image, q, a
 
+
 def debug():
     start = time()
     test_dataloader = train_loader('sortofclevr2', batch_size = 4)
@@ -282,13 +262,15 @@ def debug():
     for i, q, a in test_dataloader:
         n += 1
         print(i.size())
-        print(q) 
+        print(q)
         print(a)
         # b = time() - start
         # print(b)
-        # sum_ += b   
+        # sum_ += b
         # start = time()
     print(sum_)
+
+
 def make_data():
     train_dataloader = train_loader('sortclevr2', batch_size = 4)
     train_dataloader.dataset.load_data()
