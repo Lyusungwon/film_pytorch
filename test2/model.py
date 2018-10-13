@@ -40,7 +40,7 @@ class Conv(nn.Module):
 		for num_filter, kernel_size, stride in layer_config:
 			net.append(nn.Conv2d(prev_filter, num_filter, kernel_size, stride, (kernel_size - 1)//2))
 			if batch_norm:
-				net.append(nn.LayerNorm2d(num_filter))
+				net.append(nn.LayerNorm(num_filter))
 			net.append(nn.ReLU(inplace=True))
 			prev_filter = num_filter
 		self.net = nn.Sequential(*net)
