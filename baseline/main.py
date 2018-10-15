@@ -208,7 +208,7 @@ def test(epoch):
         questions = text_encoder(question)
         pairs = object_pair(objects, questions)
         relations = g_theta(pairs)
-        relations_sum = lower_sum(relations)
+        relations_sum = relations.sum(1).sum(1)
         output = f_phi(relations_sum)
         loss = F.cross_entropy(output, answer)
         test_loss += loss.item()
