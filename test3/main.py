@@ -38,10 +38,10 @@ parser.add_argument('--sa-nhead', type=int, default=10)
 parser.add_argument('--sa-key', type=int, default=256)
 parser.add_argument('--sa-value', type=int, default=256)
 # # g theta
-parser.add_argument('--gt-hidden', type=int, default=256)
-parser.add_argument('--gt-dropout', type=int, default=3)
-parser.add_argument('--gt-dropout-rate', type=float, default=0.2)
-parser.add_argument('--gt-layer', type=int, default=4)
+# parser.add_argument('--gt-hidden', type=int, default=256)
+# parser.add_argument('--gt-dropout', type=int, default=3)
+# parser.add_argument('--gt-dropout-rate', type=float, default=0.2)
+# parser.add_argument('--gt-layer', type=int, default=4)
 # f phi
 parser.add_argument('--fp-hidden', type=int, default=256)
 parser.add_argument('--fp-dropout', type=int, default=3)
@@ -84,7 +84,7 @@ else:
 conv = model.Conv(cv_layout, args.channel_size, args.cv_layernorm, args.sa_inner, args.sa_nhead, args.sa_key, args.sa_value, args.sa_dropout).to(device)
 # self_attention = model.SelfAttention(args.sa_nlayer, (args.cv_filter + 2), args.sa_inner, args.sa_nhead, args.sa_key, args.sa_value, args.sa_dropout).to(device)
 # question_query = model.QuestionQueryAttention((args.cv_filter + 2), 2 * args.te_embedding, args.sa_nhead, args.sa_key, args.sa_value, args.sa_dropout).to(device)
-g_theta = model.MLP(gt_layout, args.gt_dropout, args.gt_dropout_rate, last=True).to(device)
+# g_theta = model.MLP(gt_layout, args.gt_dropout, args.gt_dropout_rate, last=True).to(device)
 f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last=True).to(device)
 
 if args.load_model != '000000000000':

@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, PackedSequence
 import numpy as np
 
+
 class MLP(nn.Module):
 	def __init__(self, layers, dropout=None, dropout_rate=None, last=False):
 		super(MLP, self).__init__()
@@ -47,29 +48,13 @@ class Conv(nn.Module):
 				net.append(nn.LayerNorm([num_filter, self.input_h, self.input_w]))
 			net.append(nn.ReLU(inplace=True))
 			net.append(SelfAttentionLayer(num_filter, d_inner, n_head, d_k, d_v, dropout=0.1))
-			prev_filter = num_filter
+			prev_filter = num_filter + d_v
 		self.net = nn.Sequential(*net)
 		print(self.net)
 
 	def forward(self, x):
 		x = self.net(x)
 		return x
-
-
-class Text_encoder(nn.Module):
-	def __init__(self, vocab_size, embedding_size, hidden_size, num_layer):
-		super(Text_encoder, self).__init__()
-		self.vocab_size = vocab_size
-		self.embedding_size = embedding_size
-		self.hidden_size = hidden_size
-		self.embedding = nn.Embedding(vocab_size, embedding_size, padding_idx=None)
-		self.lstm = nn.LSTM(embedding_size, hidden_size, num_layers=num_layer, bidirectional=False, batch_first = True)
-
-	def forward(self, x):
-		embedded = self.embedding(x.data)
-		packed_embedded = PackedSequence(embedded, x.batch_sizes)
-		output, (h_n, c_n) = self.lstm(packed_embedded)
-		return h_n.squeeze(0)
 
 
 class Text_embedding(nn.Module):
@@ -85,34 +70,6 @@ class Text_embedding(nn.Module):
 		return text_embedded
 
 
-class QuestionQueryAttention(nn.Module):
-	def __init__(self, d_model, d_question, n_head, d_k, d_v, dropout=0.1):
-		super(QuestionQueryAttention, self).__init__()
-		self.fc = nn.Linear(d_question, d_model)
-		self.slf_attn = MultiHeadAttention(
-				n_head, d_model, d_k, d_v, dropout=dropout)
-
-	def forward(self, question, enc_input):
-		question = self.fc(question).unsqueeze(1)
-		enc_output, enc_slf_attn = self.slf_attn(
-			question, enc_input, enc_input)
-		return enc_output
-
-
-class SelfAttention(nn.Module):
-	''' A encoder model with self attention mechanism. '''
-
-	def __init__(self, n_layers, d_model, d_inner, n_head, d_k, d_v, dropout=0.1):
-		super(SelfAttention, self).__init__()
-		layer_stack = nn.ModuleList([SelfAttentionLayer(d_model, d_inner, n_head, d_k, d_v, dropout=dropout) for _ in range(n_layers)])
-		self.net = nn.Sequential(*layer_stack)
-		print(self.net)
-
-	def forward(self, enc_input):
-		enc_output = self.net(enc_input)
-		return enc_output
-
-
 class SelfAttentionLayer(nn.Module):
 	''' Compose with two layers '''
 
@@ -125,9 +82,10 @@ class SelfAttentionLayer(nn.Module):
 	def forward(self, enc_input):
 		enc_output, enc_slf_attn = self.slf_attn(
 			enc_input, enc_input, enc_input)
-		enc_output = self.pos_ffn(enc_output)
+		output = torch.cat([enc_input, enc_output], 1)
+		# enc_output = self.pos_ffn(enc_output)
 		# enc_output = enc_output.view(enc_output.size()[0], -1)
-		return enc_output
+		return output
 
 
 class ScaledDotProductAttention(nn.Module):

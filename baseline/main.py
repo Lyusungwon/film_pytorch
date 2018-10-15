@@ -99,8 +99,8 @@ def object_pair(images, questions):
     n, c, h, w = images.size()
     o = h * w
     hd = questions.size(1)
-    x_coordinate = torch.linspace(-1, 1, h).view(1, 1, h, 1).expand(n, 1, h, w).to(device)
-    y_coordinate = torch.linspace(-1, 1, w).view(1, 1, 1, w).expand(n, 1, h, w).to(device)
+    x_coordinate = torch.linspace(-h/2, h/2, h).view(1, 1, h, 1).expand(n, 1, h, w).to(device)
+    y_coordinate = torch.linspace(-w/2, w/2, w).view(1, 1, 1, w).expand(n, 1, h, w).to(device)
     questions = questions.unsqueeze(2).unsqueeze(3).expand(n, hd, h, w)
     pairs = torch.cat([images, x_coordinate, y_coordinate, questions], 1).view(n, -1, o).transpose(1, 2)
     return pairs
@@ -193,7 +193,7 @@ def test(epoch):
         batch_size = image.size()[0]
         image = image.to(device)
         answer = answer.to(device)
-        objects = conv(image)
+        objects = conv(image*2-1)
         if args.dataset == 'clevr':
             question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
