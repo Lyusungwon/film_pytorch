@@ -99,16 +99,10 @@ def object_pair(images, questions):
     n, c, h, w = images.size()
     o = h * w
     hd = questions.size(1)
-    # coordinate = torch.linspace(-1, 1, o).view(1, o, 1).expand(n, o, 1).to(device)
-    # coordinate = torch.zeros(n, o, 1).to(device)
-    x_coordinate = torch.linspace(-1, 1, h).view(1, h, 1, 1).expand(n, h, w, 1).contiguous().view(n, o, 1).to(device)
-    y_coordinate = torch.linspace(-1, 1, w).view(1, 1, w, 1).expand(n, h, w, 1).contiguous().view(n, o, 1).to(device)
-    images = images.view(n, c, o).transpose(1, 2)
-    images = torch.cat([images, x_coordinate, y_coordinate], 2)
-    images = images.unsqueeze(1).expand(n, o, o, c + 2).contiguous()
-    # images2 = images.unsqueeze(2).expand(n, o, o, c + 2).contiguous()
-    questions = questions.unsqueeze(1).unsqueeze(2).expand(n, o, o, hd)
-    pairs = torch.cat([images, questions], 3)
+    x_coordinate = torch.linspace(-1, 1, h).view(1, 1, h, 1).expand(n, 1, h, w).to(device)
+    y_coordinate = torch.linspace(-1, 1, w).view(1, 1, 1, w).expand(n, 1, h, w).to(device)
+    questions = questions.unsqueeze(2).unsqueeze(3).expand(n, hd, h, w)
+    pairs = torch.cat([images, x_coordinate, y_coordinate, questions], 1).view(n, -1, o).transpose(1, 2)
     return pairs
 
 # def lower_sum(relations):
@@ -149,7 +143,7 @@ def train(epoch):
         questions = text_encoder(question)
         pairs = object_pair(objects, questions)
         relations = g_theta(pairs)
-        relations_sum = relations.sum(1).sum(1)
+        relations_sum = relations.sum(1)
         output = f_phi(relations_sum)
         loss = F.cross_entropy(output, answer)
         loss.backward()
@@ -208,7 +202,7 @@ def test(epoch):
         questions = text_encoder(question)
         pairs = object_pair(objects, questions)
         relations = g_theta(pairs)
-        relations_sum = relations.sum(1).sum(1)
+        relations_sum = relations.sum(1)
         output = f_phi(relations_sum)
         loss = F.cross_entropy(output, answer)
         test_loss += loss.item()

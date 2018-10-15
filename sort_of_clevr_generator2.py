@@ -9,9 +9,9 @@ from skimage.draw import circle
 from skimage.draw import rectangle
 
 
-train_size = 98
-test_size = 2
-img_size = 64
+train_size = 9800
+test_size = 200
+img_size = 128
 size = 5
 question_size = 11  ##6 for one-hot vector of color, 2 for question type, 3 for question subtype
 """Answer : [yes, no, rectangle, circle, r, g, b, o, k, y]"""
@@ -88,7 +88,7 @@ def center_generate(objects):
 		center = np.random.randint(0 + size, img_size - size, 2)
 		if len(objects) > 0:
 			for name, c, shape in objects:
-				if ((center - c) ** 2).sum() < ((size * 2) ** 2):
+				if ((center - c) ** 2).sum() < 3 * ((size * 2) ** 2):
 					pas = False
 		if pas:
 			return center
@@ -169,14 +169,14 @@ def build_dataset():
 			dist_list = [((my_obj - obj[1]) ** 2).sum() for obj in objects]
 			dist_list[dist_list.index(0)] = (img_size ** 2) * 2 #max distance
 			closest = dist_list.index(min(dist_list))
-			if objects[closest][2] == 'rec':
-				answer = 2
-			elif objects[closest][2] == 'cir':
-				answer = 3
-			else:
-				print('error in data')
-				exit()
-			# answer = objects[closest][0] + answer_size_before_color
+			# if objects[closest][2] == 'rec':
+			# 	answer = 2
+			# elif objects[closest][2] == 'cir':
+			# 	answer = 3
+			# else:
+			# 	print('error in data')
+			# 	exit()
+			answer = objects[closest][0] + answer_size_before_color
 
 		elif subtype == 1:
 			"""furthest-from->rectangle/circle"""
