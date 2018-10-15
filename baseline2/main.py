@@ -66,9 +66,9 @@ test_loader = dataloader.test_loader(args.dataset, args.data_directory, args.bat
 cv_layout = [(args.cv_filter, args.cv_kernel, args.cv_stride) for i in range(args.cv_layer)]
 gt_layout = [args.gt_hidden for i in range(args.gt_layer)]
 if args.dataset == 'clevr':
-    gt_layout.insert(0, (args.cv_filter + 2) + args.te_hidden)
+    gt_layout.insert(0, args.cv_filter + args.te_hidden)
 else:
-    gt_layout.insert(0, (args.cv_filter + 2) + args.te_embedding * 2)
+    gt_layout.insert(0, args.cv_filter + args.te_embedding * 2)
 
 fp_layout = [args.fp_hidden for i in range(args.fp_layer)]
 fp_layout.append(train_loader.dataset.a_size)
@@ -106,7 +106,7 @@ def positional_encoding(images):
 def object_pair(images, questions):
     n, c, h, w = images.size()
     questions = questions.unsqueeze(2).unsqueeze(3).expand(n, -1, h, w)
-    pairs = torch.cat([images, questions], 1)
+    pairs = torch.cat([images, questions], 1).transpose(1, 2).transpose(2, 3).view(n, h * w, -1)
     return pairs
 
 # def lower_sum(relations):
@@ -149,7 +149,7 @@ def train(epoch):
         questions = text_encoder(question)
         pairs = object_pair(objects, questions)
         relations = g_theta(pairs)
-        relations_sum = relations.sum(1).sum(1)
+        relations_sum = relations.sum(1)
         output = f_phi(relations_sum)
         loss = F.cross_entropy(output, answer)
         loss.backward()
@@ -199,6 +199,7 @@ def test(epoch):
         batch_size = image.size()[0]
         image = image.to(device)
         answer = answer.to(device)
+        image = positional_encoding(image)
         objects = conv(image)
         if args.dataset == 'clevr':
             question = PackedSequence(question.data.to(device), question.batch_sizes)
@@ -208,7 +209,7 @@ def test(epoch):
         questions = text_encoder(question)
         pairs = object_pair(objects, questions)
         relations = g_theta(pairs)
-        relations_sum = relations.sum(1).sum(1)
+        relations_sum = relations.sum(1)
         output = f_phi(relations_sum)
         loss = F.cross_entropy(output, answer)
         test_loss += loss.item()
