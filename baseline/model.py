@@ -35,8 +35,8 @@ class Conv(nn.Module):
 		self.layer_config = layer_config
 		self.channel_size = channel_size
 		self.batch_norm = batch_norm
-		self.input_h = 64
-		self.input_w = 64
+		self.input_h = 128
+		self.input_w = 128
 		prev_filter = self.channel_size
 		net = nn.ModuleList([])
 		for num_filter, kernel_size, stride in layer_config:
