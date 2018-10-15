@@ -63,10 +63,9 @@ config_list = [args.name, args.dataset, args.epochs, args.batch_size,
                'inp', args.channel_size, args.input_h, args.input_w,
                'cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_layernorm,
                'te', args.te_embedding, args.te_hidden, args.te_layer,
-               'sa', args.sa_nlayer, args.sa_inner, args.sa_dropout, args.sa_nhead, args.sa_key, args.sa_value,
-               # 'gt', args.gt_hidden, args.gt_dropout, args.gt_dropout_rate, args.gt_layer,
+               'sa', args.sa_inner, args.sa_dropout, args.sa_nhead, args.sa_key, args.sa_value,
                'fp', args.fp_hidden, args.fp_dropout, args.fp_dropout_rate, args.fp_layer,
-               'test2']
+               'test3']
 config = '_'.join(map(str, config_list))
 print("Config:", config)
 
