@@ -139,8 +139,8 @@ def train(epoch):
         optimizer.zero_grad()
         image = image.to(device)
         answer = answer.to(device)
-        image = positional_encoding(image)
-        objects = conv(image)
+        images = positional_encoding(image)
+        objects = conv(images)
         if args.dataset == 'clevr':
             question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
@@ -199,8 +199,8 @@ def test(epoch):
         batch_size = image.size()[0]
         image = image.to(device)
         answer = answer.to(device)
-        image = positional_encoding(image)
-        objects = conv(image)
+        images = positional_encoding(image)
+        objects = conv(images)
         if args.dataset == 'clevr':
             question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
@@ -235,9 +235,9 @@ def test(epoch):
                 image = F.pad(image[:n], (0, 0, 0, 20), mode='constant', value=1).transpose(1,2).transpose(2,3)
                 image = image.cpu().numpy()
                 for i in range(n):
-                    cv2.line(image[i], (64, 0), (64, 128), (0, 0, 0), 1)
-                    cv2.line(image[i], (0, 64), (128, 64), (0, 0, 0), 1)
-                    cv2.line(image[i], (0, 128), (128, 128), (0, 0, 0), 1)
+                    cv2.line(image[i], (32, 0), (32, 64), (0, 0, 0), 1)
+                    cv2.line(image[i], (0, 32), (64, 32), (0, 0, 0), 1)
+                    cv2.line(image[i], (0, 64), (64, 64), (0, 0, 0), 1)
                     cv2.putText(image[i], '{} {} {} {}'.format(
                         train_loader.dataset.idx_to_color[question[i, 0].item()],
                         train_loader.dataset.idx_to_question[question[i, 1].item()],
