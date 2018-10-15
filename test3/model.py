@@ -31,24 +31,24 @@ class MLP(nn.Module):
 
 
 class Conv(nn.Module):
-	def __init__(self, layer_config, channel_size, batch_norm, d_inner, n_head, d_k, d_v):
+	def __init__(self, layer_config, channel_size, layer_norm, d_inner, n_head, d_k, d_v, dropout):
 		super(Conv, self).__init__()
 		self.layer_config = layer_config
 		self.channel_size = channel_size
-		self.batch_norm = batch_norm
+		self.layer_norm = layer_norm
 		self.input_h = 64
 		self.input_w = 64
 		prev_filter = self.channel_size
 		net = nn.ModuleList([])
 		for num_filter, kernel_size, stride in layer_config:
 			net.append(nn.Conv2d(prev_filter, num_filter, kernel_size, stride, (kernel_size - 1)//2))
-			if batch_norm:
+			if layer_norm:
 				self.input_h = self.input_h // 2
 				self.input_w = self.input_w // 2
 				net.append(nn.LayerNorm([num_filter, self.input_h, self.input_w]))
 			net.append(nn.ReLU(inplace=True))
-			net.append(SelfAttentionLayer(num_filter, d_inner, n_head, d_k, d_v, dropout=0.1))
-			prev_filter = num_filter + d_v
+			net.append(SelfAttentionLayer(num_filter, d_inner, n_head, d_k, d_v, dropout=dropout))
+			prev_filter = num_filter * 2
 		self.net = nn.Sequential(*net)
 		print(self.net)
 
@@ -80,10 +80,12 @@ class SelfAttentionLayer(nn.Module):
 		self.pos_ffn = PositionwiseFeedForward(d_model, d_inner, dropout=dropout)
 
 	def forward(self, enc_input):
-		enc_output, enc_slf_attn = self.slf_attn(
-			enc_input, enc_input, enc_input)
-		output = torch.cat([enc_input, enc_output], 1)
+		n, c, h, w = enc_input.size()
+		enc_input_flatten = enc_input.view(n, c, -1).transpose(1, 2)
+		enc_output, enc_slf_attn = self.slf_attn(enc_input_flatten, enc_input_flatten, enc_input_flatten)
+		enc_output = enc_output.transpose(1, 2).view(n, c, h, w)
 		# enc_output = self.pos_ffn(enc_output)
+		output = torch.cat([enc_input, enc_output], 1)
 		# enc_output = enc_output.view(enc_output.size()[0], -1)
 		return output
 

@@ -111,6 +111,7 @@ def object_pair(images, questions):
 #     relations = relations * mask
 #     return relations.sum(2).sum(1)
 
+
 def train(epoch):
     epoch_start_time = time.time()
     start_time = time.time()

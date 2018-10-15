@@ -11,7 +11,7 @@ from skimage.draw import rectangle
 
 train_size = 9800
 test_size = 200
-img_size = 128
+img_size = 64
 size = 5
 question_size = 11  ##6 for one-hot vector of color, 2 for question type, 3 for question subtype
 """Answer : [yes, no, rectangle, circle, r, g, b, o, k, y]"""

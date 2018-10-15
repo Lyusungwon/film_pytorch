@@ -21,14 +21,14 @@ parser.add_argument('--channel-size', type=int, default=3)
 parser.add_argument('--input-h', type=int, default=128)
 parser.add_argument('--input-w', type=int, default=128)
 # Text Encoder
-parser.add_argument('--te-embedding', type=int, default=64)
+parser.add_argument('--te-embedding', type=int, default=8)
 parser.add_argument('--te-hidden', type=int, default=128)
 parser.add_argument('--te-layer', type=int, default=1)
 # Convolution
 parser.add_argument('--cv-filter', type=int, default=24)
 parser.add_argument('--cv-kernel', type=int, default=3)
 parser.add_argument('--cv-stride', type=int, default=2)
-parser.add_argument('--cv-layer', type=int, default=3)
+parser.add_argument('--cv-layer', type=int, default=6)
 parser.add_argument('--cv-layernorm', action='store_true')
 # self attention
 parser.add_argument('--sa-nlayer', type=int, default=2)
@@ -43,10 +43,10 @@ parser.add_argument('--sa-value', type=int, default=256)
 # parser.add_argument('--gt-dropout-rate', type=float, default=0.2)
 # parser.add_argument('--gt-layer', type=int, default=4)
 # f phi
-parser.add_argument('--fp-hidden', type=int, default=256)
-parser.add_argument('--fp-dropout', type=int, default=3)
+parser.add_argument('--fp-hidden', type=int, default=1000)
+parser.add_argument('--fp-dropout', type=int, default=4)
 parser.add_argument('--fp-dropout-rate', type=float, default=0.2)
-parser.add_argument('--fp-layer', type=int, default=4)
+parser.add_argument('--fp-layer', type=int, default=5)
 
 args = parser.parse_args()
 
@@ -74,23 +74,19 @@ train_loader = dataloader.train_loader(args.dataset, args.data_directory, args.b
 test_loader = dataloader.test_loader(args.dataset, args.data_directory, args.batch_size, args.input_h, args.input_w, args.cpu_num)
 
 cv_layout = [(args.cv_filter, args.cv_kernel, args.cv_stride) for i in range(args.cv_layer)]
-gt_layout = [args.cv_filter + 2 + 2 * args.te_embedding] + [args.gt_hidden for i in range(args.gt_layer - 1)]
-fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
+# gt_layout = [args.cv_filter + 2 + 2 * args.te_embedding] + [args.gt_hidden for i in range(args.gt_layer)]
+fp_layout = [args.cv_filter * 2 + args.te_embedding * 2] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
 
 if args.dataset == 'clevr':
     text_encoder = model.Text_encoder(train_loader.dataset.q_size, args.te_embedding, args.te_hidden, args.te_layer).to(device)
 else:
     text_encoder = model.Text_embedding(train_loader.dataset.c_size, train_loader.dataset.q_size, args.te_embedding).to(device)
 conv = model.Conv(cv_layout, args.channel_size, args.cv_layernorm, args.sa_inner, args.sa_nhead, args.sa_key, args.sa_value, args.sa_dropout).to(device)
-# self_attention = model.SelfAttention(args.sa_nlayer, (args.cv_filter + 2), args.sa_inner, args.sa_nhead, args.sa_key, args.sa_value, args.sa_dropout).to(device)
-# question_query = model.QuestionQueryAttention((args.cv_filter + 2), 2 * args.te_embedding, args.sa_nhead, args.sa_key, args.sa_value, args.sa_dropout).to(device)
-# g_theta = model.MLP(gt_layout, args.gt_dropout, args.gt_dropout_rate, last=True).to(device)
 f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last=True).to(device)
 
 if args.load_model != '000000000000':
     text_encoder.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/text_encoder.pt'))
     conv.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/conv.pt'))
-    self_attention.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/self_attention.pt'))
     f_phi.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/f_phi.pt'))
     args.time_stamp = args.load_model[:12]
     print('Model {} loaded.'.format(args.load_model))
@@ -98,7 +94,7 @@ if args.load_model != '000000000000':
 log = args.log_directory + args.name + '/' + args.time_stamp + config + '/'
 writer = SummaryWriter(log)
 
-optimizer = optim.Adam(list(text_encoder.parameters()) + list(conv.parameters()) + list(self_attention.parameters()) + list(f_phi.parameters()), lr=args.lr)
+optimizer = optim.Adam(list(text_encoder.parameters()) + list(conv.parameters()) + list(f_phi.parameters()), lr=args.lr)
 
 
 def positional_encoding(images, questions):
@@ -140,11 +136,10 @@ def train(epoch):
             question = question.to(device)
             # answer = answer.squeeze(1)
         questions = text_encoder(question)
-        encoded_objects = positional_encoding(objects, questions)
-        # attended_objects = self_attention(encoded_objects)
-        # selection = question_query(, attended_objects)
-        relations = g_theta(encoded_objects).sum(1)
-        output = f_phi(relations)
+        # encoded_objects = positional_encoding(objects, questions)
+        # relations = g_theta(encoded_objects).sum(1)
+        cat = torch.cat([objects.squeeze(3).squeeze(2), questions], 1)
+        output = f_phi(cat)
         loss = F.cross_entropy(output, answer)
         loss.backward()
         optimizer.step()
