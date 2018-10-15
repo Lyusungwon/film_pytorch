@@ -7,11 +7,12 @@ import pickle
 
 from skimage.draw import circle
 from skimage.draw import rectangle
-
+from pathlib import Path
+home = str(Path.home())
 
 train_size = 9800
 test_size = 200
-img_size = 64
+img_size = 75
 size = 5
 question_size = 11  ##6 for one-hot vector of color, 2 for question type, 3 for question subtype
 """Answer : [yes, no, rectangle, circle, r, g, b, o, k, y]"""
@@ -215,9 +216,9 @@ def build_dataset():
 
 def generate_data(data_option=None):
 	if data_option:
-		dirs = '/home/sungwonlyu/data/sortofclevr2/{}'.format(data_option)
+		dirs = home + '/data/sortofclevr2/{}'.format(data_option)
 	else:
-		dirs = '/home/sungwonlyu/data/sortofclevr2'
+		dirs = home + '/data/sortofclevr2'
 
 	try:
 		os.makedirs(dirs)
