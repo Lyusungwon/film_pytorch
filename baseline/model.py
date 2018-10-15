@@ -3,6 +3,7 @@ from torch import nn
 from torch.nn import Sequential
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, PackedSequence
+import numpy as np
 
 
 class MLP(nn.Module):
@@ -30,20 +31,20 @@ class MLP(nn.Module):
 
 
 class Conv(nn.Module):
-	def __init__(self, layer_config, channel_size, batch_norm):
+	def __init__(self, input_h, input_w, layer_config, channel_size, layer_norm):
 		super(Conv, self).__init__()
 		self.layer_config = layer_config
 		self.channel_size = channel_size
-		self.batch_norm = batch_norm
-		self.input_h = 128
-		self.input_w = 128
+		self.layer_norm = layer_norm
+		self.input_h = input_h
+		self.input_w = input_w
 		prev_filter = self.channel_size
 		net = nn.ModuleList([])
 		for num_filter, kernel_size, stride in layer_config:
 			net.append(nn.Conv2d(prev_filter, num_filter, kernel_size, stride, (kernel_size - 1)//2))
-			if batch_norm:
-				self.input_h = self.input_h // 2
-				self.input_w = self.input_w // 2
+			if layer_norm:
+				self.input_h = int(np.ceil(self.input_h / 2))
+				self.input_w = int(np.ceil(self.input_w / 2))
 				net.append(nn.LayerNorm([num_filter, self.input_h, self.input_w]))
 			net.append(nn.ReLU(inplace=True))
 			prev_filter = num_filter
