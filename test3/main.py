@@ -80,7 +80,7 @@ if args.dataset == 'clevr':
     text_encoder = model.Text_encoder(train_loader.dataset.q_size, args.te_embedding, args.te_hidden, args.te_layer).to(device)
 else:
     text_encoder = model.Text_embedding(train_loader.dataset.c_size, train_loader.dataset.q_size, args.te_embedding).to(device)
-conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_batchnorm, args.sa_inner, args.sa_nhead, args.sa_key, args.sa_value, args.sa_dropout).to(device)
+conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_batchnorm, args.sa_inner, args.sa_nhead, args.sa_key, args.sa_value, args.sa_dropout, train_loader.dataset.c_size, train_loader.dataset.q_size, args.te_embedding).to(device)
 f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last=True).to(device)
 
 if args.load_model != '000000000000':
@@ -105,6 +105,7 @@ def positional_encoding(images, questions):
     questions = questions.view(n, 1, -1).expand(n, o, -1)
     images = torch.cat([images, x_coordinate, y_coordinate, questions], 2)
     return images
+
 
 def train(epoch):
     epoch_start_time = time.time()

@@ -33,8 +33,8 @@ class MLP(nn.Module):
 class Conv(nn.Module):
 	def __init__(self, input_h, input_w, layer_config, channel_size, batch_norm, d_inner, n_head, d_k, d_v, dropout):
 		super(Conv, self).__init__()
-		# self.input_h = input_h
-		# self.input_w = input_w
+		self.input_h = input_h
+		self.input_w = input_w
 		self.layer_config = layer_config
 		self.channel_size = channel_size
 		self.batch_norm = batch_norm
@@ -43,9 +43,9 @@ class Conv(nn.Module):
 		for num_filter, kernel_size, stride in layer_config:
 			net.append(nn.Conv2d(prev_filter, num_filter, kernel_size, stride, (kernel_size - 1)//2))
 			if batch_norm:
-				# self.input_h = self.input_h // 2
-				# self.input_w = self.input_w // 2
-				net.append(nn.BatchNorm(num_filter))
+				self.input_h = self.input_h // 2
+				self.input_w = self.input_w // 2
+				net.append(nn.BatchNorm(num_filter, self.input_h, self.input_w))
 			net.append(nn.ReLU(inplace=True))
 			net.append(SelfAttentionLayer(num_filter, d_inner, n_head, d_k, d_v, dropout=dropout))
 			prev_filter = num_filter * 2
@@ -55,6 +55,9 @@ class Conv(nn.Module):
 	def forward(self, x):
 		x = self.net(x)
 		return x
+
+class Text_embedding(nn.Module):
+
 
 
 class Text_embedding(nn.Module):
