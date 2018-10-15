@@ -24,7 +24,7 @@ parser.add_argument('--cv-filter', type=int, default=24)
 parser.add_argument('--cv-kernel', type=int, default=3)
 parser.add_argument('--cv-stride', type=int, default=2)
 parser.add_argument('--cv-layer', type=int, default=4)
-parser.add_argument('--cv-batchnorm', action='store_true')
+parser.add_argument('--cv-layernorm', action='store_true')
 # Text Encoder
 parser.add_argument('--te-embedding', type=int, default=32)
 parser.add_argument('--te-hidden', type=int, default=128)
@@ -52,7 +52,7 @@ else:
 config_list = [args.name, args.dataset, args.epochs, args.batch_size, 
                 args.lr, args.lr_term, args.lr_inc, args.device,
                'inp', args.channel_size, args.input_h, args.input_w,
-               'cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
+               'cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_layernorm,
                'te', args.te_embedding, args.te_hidden, args.te_layer,
                'gt', args.gt_hidden, args.gt_layer,
                'fp', args.fp_hidden, args.fp_dropout, args.fp_dropout_rate, args.fp_layer,
@@ -73,7 +73,7 @@ else:
 fp_layout = [args.fp_hidden for i in range(args.fp_layer)]
 fp_layout.append(train_loader.dataset.a_size)
 
-conv = model.Conv(cv_layout, args.channel_size, args.cv_batchnorm).to(device)
+conv = model.Conv(cv_layout, args.channel_size, args.cv_layernorm).to(device)
 g_theta = model.MLP(gt_layout).to(device)
 f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last=True).to(device)
 if args.dataset == 'clevr':
