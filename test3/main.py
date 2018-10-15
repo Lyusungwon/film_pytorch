@@ -29,7 +29,7 @@ parser.add_argument('--cv-filter', type=int, default=24)
 parser.add_argument('--cv-kernel', type=int, default=3)
 parser.add_argument('--cv-stride', type=int, default=2)
 parser.add_argument('--cv-layer', type=int, default=6)
-parser.add_argument('--cv-layernorm', action='store_true')
+parser.add_argument('--cv-batchnorm', action='store_true')
 # self attention
 parser.add_argument('--sa-nlayer', type=int, default=2)
 parser.add_argument('--sa-inner', type=int, default=1024)
@@ -61,7 +61,7 @@ else:
 config_list = [args.name, args.dataset, args.epochs, args.batch_size, 
                 args.lr, args.lr_term, args.lr_inc, args.device,
                'inp', args.channel_size, args.input_h, args.input_w,
-               'cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_layernorm,
+               'cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
                'te', args.te_embedding, args.te_hidden, args.te_layer,
                'sa', args.sa_inner, args.sa_dropout, args.sa_nhead, args.sa_key, args.sa_value,
                'fp', args.fp_hidden, args.fp_dropout, args.fp_dropout_rate, args.fp_layer,
@@ -80,7 +80,7 @@ if args.dataset == 'clevr':
     text_encoder = model.Text_encoder(train_loader.dataset.q_size, args.te_embedding, args.te_hidden, args.te_layer).to(device)
 else:
     text_encoder = model.Text_embedding(train_loader.dataset.c_size, train_loader.dataset.q_size, args.te_embedding).to(device)
-conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm, args.sa_inner, args.sa_nhead, args.sa_key, args.sa_value, args.sa_dropout).to(device)
+conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_batchnorm, args.sa_inner, args.sa_nhead, args.sa_key, args.sa_value, args.sa_dropout).to(device)
 f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last=True).to(device)
 
 if args.load_model != '000000000000':
