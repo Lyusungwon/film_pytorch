@@ -31,13 +31,13 @@ class MLP(nn.Module):
 
 
 class Conv(nn.Module):
-	def __init__(self, layer_config, channel_size, layer_norm, d_inner, n_head, d_k, d_v, dropout):
+	def __init__(self, input_h, input_w, layer_config, channel_size, layer_norm, d_inner, n_head, d_k, d_v, dropout):
 		super(Conv, self).__init__()
+		self.input_h = input_h
+		self.input_w = input_w
 		self.layer_config = layer_config
 		self.channel_size = channel_size
 		self.layer_norm = layer_norm
-		self.input_h = 64
-		self.input_w = 64
 		prev_filter = self.channel_size
 		net = nn.ModuleList([])
 		for num_filter, kernel_size, stride in layer_config:

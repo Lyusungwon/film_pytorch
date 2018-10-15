@@ -18,8 +18,8 @@ parser = argparser.default_parser()
 parser.add_argument('--name', type=str, default='rn')
 parser.add_argument('--dataset', type=str, default='sortofclevr2')
 parser.add_argument('--channel-size', type=int, default=3)
-parser.add_argument('--input-h', type=int, default=128)
-parser.add_argument('--input-w', type=int, default=128)
+parser.add_argument('--input-h', type=int, default=75)
+parser.add_argument('--input-w', type=int, default=75)
 # Text Encoder
 parser.add_argument('--te-embedding', type=int, default=8)
 parser.add_argument('--te-hidden', type=int, default=128)
@@ -80,7 +80,7 @@ if args.dataset == 'clevr':
     text_encoder = model.Text_encoder(train_loader.dataset.q_size, args.te_embedding, args.te_hidden, args.te_layer).to(device)
 else:
     text_encoder = model.Text_embedding(train_loader.dataset.c_size, train_loader.dataset.q_size, args.te_embedding).to(device)
-conv = model.Conv(cv_layout, args.channel_size, args.cv_layernorm, args.sa_inner, args.sa_nhead, args.sa_key, args.sa_value, args.sa_dropout).to(device)
+conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm, args.sa_inner, args.sa_nhead, args.sa_key, args.sa_value, args.sa_dropout).to(device)
 f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last=True).to(device)
 
 if args.load_model != '000000000000':
@@ -221,15 +221,15 @@ def test(epoch):
                 image = F.pad(image[:n], (0, 0, 0, 20), mode='constant', value=1).transpose(1,2).transpose(2,3)
                 image = image.cpu().numpy()
                 for i in range(n):
-                    cv2.line(image[i], (64, 0), (64, 128), (0, 0, 0), 1)
-                    cv2.line(image[i], (0, 64), (128, 64), (0, 0, 0), 1)
-                    cv2.line(image[i], (0, 128), (128, 128), (0, 0, 0), 1)
+                    cv2.line(image[i], (args.input_h//2, 0), (args.input_h//2, args.input_w), (0, 0, 0), 1)
+                    cv2.line(image[i], (0, args.input_w//2), (args.input_h, args.input_w//2), (0, 0, 0), 1)
+                    cv2.line(image[i], (0, args.input_w), (args.input_h, args.input_w), (0, 0, 0), 1)
                     cv2.putText(image[i], '{} {} {} {}'.format(
                         train_loader.dataset.idx_to_color[question[i, 0].item()],
                         train_loader.dataset.idx_to_question[question[i, 1].item()],
                         train_loader.dataset.idx_to_answer[answer[i].item()],
                         train_loader.dataset.idx_to_answer[pred[i].item()]),
-                        (2, 143), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+                        (2, args.input_h + 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0))
                 image = torch.from_numpy(image).transpose(2,3).transpose(1,2)
                 writer.add_image('Image', torch.cat([image]), epoch)
     print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
