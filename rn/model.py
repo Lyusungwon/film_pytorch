@@ -28,25 +28,30 @@ class MLP(nn.Module):
         return x
 
 class Conv(nn.Module):
-    def __init__(self, layer_config, channel_size, batch_norm):
-        super(Conv, self).__init__()
-        self.layer_config = layer_config
-        self.channel_size = channel_size
-        self.batch_norm = batch_norm
-        prev_filter = self.channel_size
-        net = nn.ModuleList([])
-        for num_filter, kernel_size, stride in layer_config:
-            net.append(nn.Conv2d(prev_filter, num_filter, kernel_size, stride, (kernel_size - 1)//2))
-            if batch_norm:
-                net.append(nn.BatchNorm2d(num_filter))
-            net.append(nn.ReLU(inplace=True))
-            prev_filter = num_filter
-        self.net = nn.Sequential(*net)
-        print(self.net)
+	def __init__(self, input_h, input_w, layer_config, channel_size, layer_norm):
+		super(Conv, self).__init__()
+		self.layer_config = layer_config
+		self.channel_size = channel_size
+		self.layer_norm = layer_norm
+		self.input_h = input_h
+		self.input_w = input_w
+		prev_filter = self.channel_size
+		net = nn.ModuleList([])
+		for num_filter, kernel_size, stride in layer_config:
+			net.append(nn.Conv2d(prev_filter, num_filter, kernel_size, stride, (kernel_size - 1)//2))
+			if layer_norm:
+				self.input_h = int(np.ceil(self.input_h / 2))
+				self.input_w = int(np.ceil(self.input_w / 2))
+				net.append(nn.LayerNorm([num_filter, self.input_h, self.input_w]))
+			net.append(nn.ReLU(inplace=True))
+			prev_filter = num_filter
+		self.net = nn.Sequential(*net)
+		print(self.net)
 
-    def forward(self, x):
-        x = self.net(x)
-        return x
+	def forward(self, x):
+		x = self.net(x)
+		return x
+
 
 class Text_encoder(nn.Module):
     def __init__(self, vocab_size, embedding_size, hidden_size, num_layer):

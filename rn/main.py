@@ -21,9 +21,9 @@ parser.add_argument('--cv-filter', type=int, default=24)
 parser.add_argument('--cv-kernel', type=int, default=3)
 parser.add_argument('--cv-stride', type=int, default=2)
 parser.add_argument('--cv-layer', type=int, default=4)
-parser.add_argument('--cv-batchnorm', action='store_false')
+parser.add_argument('--cv-layernorm', action='store_false')
 # Text Encoder
-parser.add_argument('--te-embedding', type=int, default=32)
+parser.add_argument('--te-embedding', type=int, default=8)
 parser.add_argument('--te-hidden', type=int, default=128)
 parser.add_argument('--te-layer', type=int, default=1)
 # g theta
@@ -53,14 +53,13 @@ else:
 	args.input_h = args.image_size
 	args.input_w = args.image_size
 
-config_list = [args.name, args.dataset, args.epochs, args.batch_size, 
-                args.lr, args.lr_term, args.lr_inc, args.device,
-               'inp', args.channel_size] + data_config + \
-				['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
-               'te', args.te_embedding, args.te_hidden, args.te_layer,
-               'gt', args.gt_hidden, args.gt_layer,
-               'fp', args.fp_hidden, args.fp_dropout, args.fp_dropout_rate, args.fp_layer,
-               'rn']
+config_list = [args.name, args.dataset, args.epochs, args.batch_size, args.lr, args.device,
+				'inp', args.channel_size] + data_config + \
+				['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_layernorm,
+				'te', args.te_embedding, args.te_hidden, args.te_layer,
+				'gt', args.gt_hidden, args.gt_layer,
+				'fp', args.fp_hidden, args.fp_dropout, args.fp_dropout_rate, args.fp_layer,
+				'rn']
 config = '_'.join(map(str, config_list))
 print("Config:", config)
 
@@ -73,11 +72,9 @@ if args.dataset == 'clevr':
 	gt_layout.insert(0, (args.cv_filter + 2) * 2 + args.te_hidden)
 else:
 	gt_layout.insert(0, (args.cv_filter + 2) * 2 + args.te_embedding * 2)
+fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
 
-fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)]
-fp_layout.append(train_loader.dataset.a_size)
-
-conv = model.Conv(cv_layout, args.channel_size, args.cv_batchnorm).to(device)
+conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
 g_theta = model.MLP(gt_layout).to(device)
 f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last=True).to(device)
 if args.dataset == 'clevr':
@@ -140,12 +137,6 @@ def train(epoch):
 	f_phi.train()
 	conv.train()
 	text_encoder.train()
-	if (epoch + 1) % args.lr_term == 0:
-		lr = 0
-		for params in optimizer.param_groups:
-			lr = min(0.001, params['lr'] * args.lr_inc)
-			params['lr'] = lr
-		print("Learning rate updated to {}".format(lr))
 	for batch_idx, (image, question, answer) in enumerate(train_loader):
 		batch_size = image.size()[0]
 		optimizer.zero_grad()
@@ -225,7 +216,7 @@ def test(epoch):
 		test_loss += loss.item()
 		pred = torch.max(output.data, 1)[1]
 		correct = (pred == answer)
-		for i in range(6):
+		for i in range(train_loader.dataset.q_size):
 			idx = question[:, 1] == i
 			q_correct[i] += (correct * idx).sum().item()
 			q_num[i] += idx.sum().item()
@@ -235,7 +226,7 @@ def test(epoch):
 				pad_question, lengths = pad_packed_sequence(question)
 				pad_question = pad_question.transpose(0, 1)
 				question_text = [' '.join([train_loader.dataset.idx_to_word[i] for i in q]) for q in
-				                 pad_question.cpu().numpy()[:n]]
+								 pad_question.cpu().numpy()[:n]]
 				answer_text = [train_loader.dataset.answer_idx_to_word[a] for a in answer.cpu().numpy()[:n]]
 				text = []
 				for j, (q, a) in enumerate(zip(question_text, answer_text)):
@@ -246,15 +237,15 @@ def test(epoch):
 				image = F.pad(image[:n], (0, 0, 0, 20), mode='constant', value=1).transpose(1, 2).transpose(2, 3)
 				image = image.cpu().numpy()
 				for i in range(n):
-					cv2.line(image[i], (64, 0), (64, 128), (0, 0, 0), 1)
-					cv2.line(image[i], (0, 64), (128, 64), (0, 0, 0), 1)
-					cv2.line(image[i], (0, 128), (128, 128), (0, 0, 0), 1)
+					cv2.line(image[i], (args.input_w // 2, 0), (args.input_w // 2, args.input_h), (0, 0, 0), 1)
+					cv2.line(image[i], (0, args.input_h // 2), (args.input_w, args.input_h // 2), (0, 0, 0), 1)
+					cv2.line(image[i], (0, args.input_h), (args.input_w, args.input_h), (0, 0, 0), 1)
 					cv2.putText(image[i], '{} {} {} {}'.format(
 						train_loader.dataset.idx_to_color[question[i, 0].item()],
 						train_loader.dataset.idx_to_question[question[i, 1].item()],
 						train_loader.dataset.idx_to_answer[answer[i].item()],
 						train_loader.dataset.idx_to_answer[pred[i].item()]),
-					            (2, 143), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+								(2, args.input_h + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 				image = torch.from_numpy(image).transpose(2, 3).transpose(1, 2)
 				writer.add_image('Image', torch.cat([image]), epoch)
 	print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
