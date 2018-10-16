@@ -21,7 +21,7 @@ parser.add_argument('--cv-filter', type=int, default=24)
 parser.add_argument('--cv-kernel', type=int, default=3)
 parser.add_argument('--cv-stride', type=int, default=2)
 parser.add_argument('--cv-layer', type=int, default=4)
-parser.add_argument('--cv-layernorm', action='store_true')
+parser.add_argument('--cv-layernorm', action='store_false')
 # Text Encoder
 parser.add_argument('--te-embedding', type=int, default=8)
 parser.add_argument('--te-hidden', type=int, default=128)
