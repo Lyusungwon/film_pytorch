@@ -1,4 +1,4 @@
-import cv2
+import argparse
 import os
 import numpy as np
 import random
@@ -9,11 +9,19 @@ from skimage.draw import circle
 from skimage.draw import rectangle
 from pathlib import Path
 home = str(Path.home())
+parser = argparse.ArgumentParser(description='parser')
+parser.add_argument('--train-size', type=int, default=9800)
+parser.add_argument('--test-size', type=int, default=200)
+parser.add_argument('--image-size', type=int, default=75)
+parser.add_argument('--size', type=int, default=5)
+parser.add_argument('--closest', type=int, default=3)
+args = parser.parse_args()
+config = '_'.join(map(str, [args.train_size, args.test_size, args.image_size, args.size, args.closest]))
 
-train_size = 9800
-test_size = 200
-img_size = 75
-size = 5
+train_size = args.train_size
+test_size = args.test_size
+img_size = args.image_size
+size = args.size
 question_size = 11  ##6 for one-hot vector of color, 2 for question type, 3 for question subtype
 """Answer : [yes, no, rectangle, circle, r, g, b, o, k, y]"""
 
@@ -81,15 +89,13 @@ answer_dict = {
 		}
 
 
-
-
 def center_generate(objects):
 	while True:
 		pas = True
 		center = np.random.randint(0 + size, img_size - size, 2)
 		if len(objects) > 0:
 			for name, c, shape in objects:
-				if ((center - c) ** 2).sum() < 3 * ((size * 2) ** 2):
+				if ((center - c) ** 2).sum() < args.closest * ((size * 2) ** 2):
 					pas = False
 		if pas:
 			return center
@@ -214,6 +220,7 @@ def build_dataset():
 	dataset = (img, relations, norelations)
 	return dataset
 
+
 def generate_data(data_option=None):
 	if data_option:
 		dirs = home + '/data/sortofclevr2/{}'.format(data_option)
@@ -245,9 +252,6 @@ def generate_data(data_option=None):
 			pickle.dump(test_datasets, f)
 		print('datasets saved at {}'.format(dirs))
 
-def test():
-	a = [build_dataset() for _ in range(1000)]
-
 
 if __name__ == '__main__':
-	generate_data()
+	generate_data(config)

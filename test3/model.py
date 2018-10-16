@@ -1,12 +1,13 @@
 import torch
 from torch import nn
+from torch.nn import Sequential
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, PackedSequence
 import numpy as np
 
 
 class MLP(nn.Module):
-	def __init__(self, layers, dropout=None, dropout_rate=None, last=False):
+	def __init__(self, layers, dropout = None, dropout_rate = None, last = False):
 		super(MLP, self).__init__()
 		self.layers = layers
 		self.dropout = dropout
@@ -25,30 +26,28 @@ class MLP(nn.Module):
 		print(self.net)
 
 	def forward(self, x):
-		x = x.view(x.size()[0], -1)
 		x = self.net(x)
 		return x
 
 
 class Conv(nn.Module):
-	def __init__(self, input_h, input_w, layer_config, channel_size, batch_norm, d_inner, n_head, d_k, d_v, dropout):
+	def __init__(self, input_h, input_w, layer_config, channel_size, layer_norm):
 		super(Conv, self).__init__()
-		self.input_h = input_h
-		self.input_w = input_w
 		self.layer_config = layer_config
 		self.channel_size = channel_size
-		self.batch_norm = batch_norm
+		self.layer_norm = layer_norm
+		self.input_h = input_h
+		self.input_w = input_w
 		prev_filter = self.channel_size
 		net = nn.ModuleList([])
 		for num_filter, kernel_size, stride in layer_config:
 			net.append(nn.Conv2d(prev_filter, num_filter, kernel_size, stride, (kernel_size - 1)//2))
-			if batch_norm:
-				self.input_h = self.input_h // 2
-				self.input_w = self.input_w // 2
-				net.append(nn.BatchNorm(num_filter, self.input_h, self.input_w))
+			if layer_norm:
+				self.input_h = int(np.ceil(self.input_h / 2))
+				self.input_w = int(np.ceil(self.input_w / 2))
+				net.append(nn.LayerNorm([num_filter, self.input_h, self.input_w]))
 			net.append(nn.ReLU(inplace=True))
-			net.append(SelfAttentionLayer(num_filter, d_inner, n_head, d_k, d_v, dropout=dropout))
-			prev_filter = num_filter * 2
+			prev_filter = num_filter
 		self.net = nn.Sequential(*net)
 		print(self.net)
 
@@ -56,8 +55,21 @@ class Conv(nn.Module):
 		x = self.net(x)
 		return x
 
-class Text_embedding(nn.Module):
 
+class Text_encoder(nn.Module):
+	def __init__(self, vocab_size, embedding_size, hidden_size, num_layer):
+		super(Text_encoder, self).__init__()
+		self.vocab_size = vocab_size
+		self.embedding_size = embedding_size
+		self.hidden_size = hidden_size
+		self.embedding = nn.Embedding(vocab_size, embedding_size, padding_idx=None)
+		self.lstm = nn.LSTM(embedding_size, hidden_size, num_layers=num_layer, bidirectional=False, batch_first = True)
+
+	def forward(self, x):
+		embedded = self.embedding(x.data)
+		packed_embedded = PackedSequence(embedded, x.batch_sizes)
+		output, (h_n, c_n) = self.lstm(packed_embedded)
+		return h_n.squeeze(0)
 
 
 class Text_embedding(nn.Module):
@@ -71,120 +83,3 @@ class Text_embedding(nn.Module):
 		q_embedded = self.question_embedding(x[:, 1])
 		text_embedded = torch.cat([c_embedded, q_embedded], 1)
 		return text_embedded
-
-
-class SelfAttentionLayer(nn.Module):
-	''' Compose with two layers '''
-
-	def __init__(self, d_model, d_inner, n_head, d_k, d_v, dropout=0.1):
-		super(SelfAttentionLayer, self).__init__()
-		self.slf_attn = MultiHeadAttention(
-			n_head, d_model, d_k, d_v, dropout=dropout)
-		self.pos_ffn = PositionwiseFeedForward(d_model, d_inner, dropout=dropout)
-
-	def forward(self, enc_input):
-		n, c, h, w = enc_input.size()
-		enc_input_flatten = enc_input.view(n, c, -1).transpose(1, 2)
-		enc_output, enc_slf_attn = self.slf_attn(enc_input_flatten, enc_input_flatten, enc_input_flatten)
-		enc_output = enc_output.transpose(1, 2).view(n, c, h, w)
-		# enc_output = self.pos_ffn(enc_output)
-		output = torch.cat([enc_input, enc_output], 1)
-		# enc_output = enc_output.view(enc_output.size()[0], -1)
-		return output
-
-
-class ScaledDotProductAttention(nn.Module):
-	''' Scaled Dot-Product Attention '''
-
-	def __init__(self, temperature, attn_dropout=0.1):
-		super().__init__()
-		self.temperature = temperature
-		self.dropout = nn.Dropout(attn_dropout)
-		self.softmax = nn.Softmax(dim=2)
-
-	def forward(self, q, k, v):
-
-		attn = torch.bmm(q, k.transpose(1, 2))
-		attn = attn / self.temperature
-
-		attn = self.softmax(attn)
-		attn = self.dropout(attn)
-		output = torch.bmm(attn, v)
-
-		return output, attn
-
-
-class MultiHeadAttention(nn.Module):
-	''' Multi-Head Attention module '''
-
-	def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1):
-		super().__init__()
-
-		self.n_head = n_head
-		self.d_k = d_k
-		self.d_v = d_v
-
-		self.w_qs = nn.Linear(d_model, n_head * d_k)
-		self.w_ks = nn.Linear(d_model, n_head * d_k)
-		self.w_vs = nn.Linear(d_model, n_head * d_v)
-		nn.init.normal_(self.w_qs.weight, mean=0, std=np.sqrt(2.0 / (d_model + d_k)))
-		nn.init.normal_(self.w_ks.weight, mean=0, std=np.sqrt(2.0 / (d_model + d_k)))
-		nn.init.normal_(self.w_vs.weight, mean=0, std=np.sqrt(2.0 / (d_model + d_v)))
-
-		self.attention = ScaledDotProductAttention(temperature=np.power(d_k, 0.5))
-		self.layer_norm = nn.LayerNorm(d_model)
-
-		self.fc = nn.Linear(n_head * d_v, d_model)
-		nn.init.xavier_normal_(self.fc.weight)
-
-		self.dropout = nn.Dropout(dropout)
-
-	def forward(self, q, k, v):
-
-		d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
-
-		sz_b, len_q, _ = q.size()
-		sz_b, len_k, _ = k.size()
-		sz_b, len_v, _ = v.size()
-
-		residual = q
-		q = self.w_qs(q).view(sz_b, len_q, n_head, d_k)
-		k = self.w_ks(k).view(sz_b, len_k, n_head, d_k)
-		v = self.w_vs(v).view(sz_b, len_v, n_head, d_v)
-
-		q = q.permute(2, 0, 1, 3).contiguous().view(-1, len_q, d_k) # (n*b) x lq x dk
-		k = k.permute(2, 0, 1, 3).contiguous().view(-1, len_k, d_k) # (n*b) x lk x dk
-		v = v.permute(2, 0, 1, 3).contiguous().view(-1, len_v, d_v) # (n*b) x lv x dv
-
-		output, attn = self.attention(q, k, v)
-
-		output = output.view(n_head, sz_b, len_q, d_v)
-		output = output.permute(1, 2, 0, 3).contiguous().view(sz_b, len_q, -1) # b x lq x (n*dv)
-
-		output = self.dropout(self.fc(output))
-		output = self.layer_norm(output + residual)
-
-		return output, attn
-
-
-class PositionwiseFeedForward(nn.Module):
-	''' A two-feed-forward-layer module '''
-
-	def __init__(self, d_in, d_hid, dropout=0.1):
-		super().__init__()
-		self.w_1 = nn.Conv1d(d_in, d_hid, 1) # position-wise
-		self.w_2 = nn.Conv1d(d_hid, d_in, 1) # position-wise
-		self.layer_norm = nn.LayerNorm(d_in)
-		self.dropout = nn.Dropout(dropout)
-
-	def forward(self, x):
-		residual = x
-		output = x.transpose(1, 2)
-		output = self.w_2(F.relu(self.w_1(output)))
-		output = output.transpose(1, 2)
-		output = self.dropout(output)
-		output = self.layer_norm(output + residual)
-		return output
-
-
-

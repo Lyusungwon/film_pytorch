@@ -35,5 +35,13 @@ def default_parser():
                         help='load previous model')
     parser.add_argument('--start-epoch', type=int, default=0, metavar='N',
                         help='start-epoch number')
-
+	## Datasets
+    parser.add_argument('--train-size', type=int, default=9800)
+    parser.add_argument('--test-size', type=int, default=200)
+    parser.add_argument('--image-size', type=int, default=75)
+    parser.add_argument('--size', type=int, default=5)
+    parser.add_argument('--closest', type=int, default=3)
+    parser.add_argument('--channel-size', type=int, default=3)
+    parser.add_argument('--input-h', type=int, default=75)
+    parser.add_argument('--input-w', type=int, default=75)
     return parser
