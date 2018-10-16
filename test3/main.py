@@ -1,16 +1,16 @@
-import sys
-sys.path.append('..')
-import dataloader
-import argparser
 import time
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
 from tensorboardX import SummaryWriter
-from rn import model
+import model
 from collections import defaultdict
 import cv2
+import sys
+sys.path.append('..')
+import argparser
+import dataloader
 
 parser = argparser.default_parser()
 # Input
