@@ -3,6 +3,7 @@ from torch import nn
 from torch.nn import Sequential
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, PackedSequence
+import numpy as np
 
 class MLP(nn.Module):
     def __init__(self, layers, dropout = None, dropout_rate = None, last = False):
