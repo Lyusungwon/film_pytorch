@@ -189,16 +189,14 @@ def build_dataset():
 			my_obj = objects[color][1]
 			dist_list = [((my_obj - obj[1]) ** 2).sum() for obj in objects]
 			furthest = dist_list.index(max(dist_list))
-
-			if objects[furthest][2] == 'rec':
-				answer = 2
-			elif objects[furthest][2] == 'cir':
-				answer = 3
-			else:
-				print('error in data')
-				exit()
-
-			# answer = objects[furthest][0] + answer_size_before_color
+			# if objects[furthest][2] == 'rec':
+			# 	answer = 2
+			# elif objects[furthest][2] == 'cir':
+			# 	answer = 3
+			# else:
+			# 	print('error in data')
+			# 	exit()
+			answer = objects[furthest][0] + answer_size_before_color
 
 		elif subtype == 2:
 			"""count->1~6"""
