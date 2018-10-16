@@ -9,25 +9,24 @@ from skimage.draw import circle
 from skimage.draw import rectangle
 from pathlib import Path
 home = str(Path.home())
-parser = argparse.ArgumentParser(description='parser')
-parser.add_argument('--train-size', type=int, default=9800)
-parser.add_argument('--test-size', type=int, default=200)
-parser.add_argument('--image-size', type=int, default=75)
-parser.add_argument('--size', type=int, default=5)
-parser.add_argument('--closest', type=int, default=3)
-args = parser.parse_args()
-config = '_'.join(map(str, [args.train_size, args.test_size, args.image_size, args.size, args.closest]))
 
-train_size = args.train_size
-test_size = args.test_size
-img_size = args.image_size
-size = args.size
+if __name__ == '__main__':
+	parser = argparse.ArgumentParser(description='parser')
+	parser.add_argument('--train-size', type=int, default=9800)
+	parser.add_argument('--test-size', type=int, default=200)
+	parser.add_argument('--image-size', type=int, default=75)
+	parser.add_argument('--size', type=int, default=5)
+	parser.add_argument('--closest', type=int, default=3)
+	args = parser.parse_args()
+	config = '_'.join(map(str, [args.train_size, args.test_size, args.image_size, args.size, args.closest]))
+	train_size = args.train_size
+	test_size = args.test_size
+	img_size = args.image_size
+	size = args.size
+
 question_size = 11  ##6 for one-hot vector of color, 2 for question type, 3 for question subtype
 """Answer : [yes, no, rectangle, circle, r, g, b, o, k, y]"""
-
 nb_questions = 10
-
-
 
 colors = [
 	(255, 0, 0),  ##r
@@ -251,7 +250,6 @@ def generate_data(data_option=None):
 		with  open(os.path.join(dirs, 'sort-of-clevr2-val.pickle'), 'wb') as f:
 			pickle.dump(test_datasets, f)
 		print('datasets saved at {}'.format(dirs))
-
 
 if __name__ == '__main__':
 	generate_data(config)

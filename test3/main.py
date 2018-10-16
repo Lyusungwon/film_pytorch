@@ -1,7 +1,7 @@
 import sys
 sys.path.append('..')
-import argparser
 import dataloader
+import argparser
 import time
 import torch
 import torch.optim as optim
@@ -279,12 +279,13 @@ def test(epoch):
 	writer.add_scalar('Test total accuracy', sum(q_correct.values())/len(test_loader.dataset), epoch)
 
 
-for epoch in range(args.start_epoch, args.start_epoch + args.epochs):
-	train(epoch)
-	test(epoch)
-	torch.save(g_theta.state_dict(), log + 'g_theta.pt')
-	torch.save(f_phi.state_dict(), log + 'f_phi.pt')
-	torch.save(conv.state_dict(), log + 'conv.pt')
-	torch.save(text_encoder.state_dict(), log + 'text_encoder.pt')
-	print('Model saved in ', log)
-writer.close()
+if __name__ == '__main__':
+	for epoch in range(args.start_epoch, args.start_epoch + args.epochs):
+		train(epoch)
+		test(epoch)
+		torch.save(g_theta.state_dict(), log + 'g_theta.pt')
+		torch.save(f_phi.state_dict(), log + 'f_phi.pt')
+		torch.save(conv.state_dict(), log + 'conv.pt')
+		torch.save(text_encoder.state_dict(), log + 'text_encoder.pt')
+		print('Model saved in ', log)
+	writer.close()
