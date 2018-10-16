@@ -28,10 +28,10 @@ parser.add_argument('--te-hidden', type=int, default=128)
 parser.add_argument('--te-layer', type=int, default=1)
 # h psi
 parser.add_argument('--hp-hidden', type=int, default=128)
-parser.add_argument('--hp-layer', type=int, default=3)
+parser.add_argument('--hp-layer', type=int, default=4)
 # g theta
 parser.add_argument('--gt-hidden', type=int, default=1000)
-parser.add_argument('--gt-layer', type=int, default=3)
+parser.add_argument('--gt-layer', type=int, default=4)
 # f phi
 parser.add_argument('--fp-hidden', type=int, default=256)
 parser.add_argument('--fp-dropout', type=int, default=2)
