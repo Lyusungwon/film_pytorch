@@ -114,7 +114,7 @@ def encode(objects, code):
     color_code, question_code = torch.chunk(code.unsqueeze(2).unsqueeze(3).expand(n, hd, h, w), 2, 1)
     color_encoded = torch.cat([coordinate_encoded, color_code], 1).view(n, -1, o).transpose(1, 2)
     question_encoded = torch.cat([coordinate_encoded, question_code], 1).view(n, -1, o).transpose(1, 2)
-    return color_encoded, question_encoded, coordinate_encoded
+    return color_encoded, question_encoded, coordinate_encoded.view(n, -1, o).transpose(1, 2)
 
 
 def pair(coordinate_encoded, question_encoded, logits):
