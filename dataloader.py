@@ -12,6 +12,7 @@ from collections import defaultdict
 import h5py
 import vqa_util
 import sort_of_clevr_generator2
+import sort_of_clevr_generator3
 from pathlib import Path
 home = str(Path.home())
 
@@ -29,7 +30,7 @@ def collate_text(list_inputs):
 	return images, questions_packed, answers
 
 
-def train_loader(data, data_directory = home + '/data/', batch_size = 128, data_config=[128, 128, 0]):
+def train_loader(data, data_directory = home + '/data/', batch_size = 128, data_config=[9800, 200, 75, 5, 3]):
 	if data == 'clevr':
 		input_h, input_w, cpu_num = data_config
 		train_dataloader = DataLoader(
@@ -48,10 +49,15 @@ def train_loader(data, data_directory = home + '/data/', batch_size = 128, data_
 		train_dataloader = DataLoader(
 			SortOfClevr2(data_directory + data + '/' + data_config + '/', train=True),
 			batch_size=batch_size, shuffle=True)
+	elif data == 'sortofclevr3':
+		data_config = '_'.join(map(str, data_config))
+		train_dataloader = DataLoader(
+			SortOfClevr3(data_directory + data + '/' + data_config + '/', train=True),
+			batch_size=batch_size, shuffle=True)
 	return train_dataloader
 
 
-def test_loader(data, data_directory =  home + '/data/', batch_size = 12, data_config=[128, 128, 0]):
+def test_loader(data, data_directory =  home + '/data/', batch_size = 12, data_config=[9800, 200, 75, 5, 3]):
 	if data == 'clevr':
 		input_h, input_w, cpu_num = data_config
 		test_dataloader = DataLoader(
@@ -69,6 +75,11 @@ def test_loader(data, data_directory =  home + '/data/', batch_size = 12, data_c
 		data_config = '_'.join(map(str, data_config))
 		test_dataloader = DataLoader(
 			SortOfClevr2(data_directory + data + '/' + data_config + '/', train=False),
+			batch_size=batch_size, shuffle=True)
+	elif data == 'sortofclevr3':
+		data_config = '_'.join(map(str, data_config))
+		test_dataloader = DataLoader(
+			SortOfClevr3(data_directory + data + '/' + data_config + '/', train=False),
 			batch_size=batch_size, shuffle=True)
 	return test_dataloader
 
@@ -254,10 +265,58 @@ class SortOfClevr2(Dataset):
 		q = torch.from_numpy(q).long()
 		return image, q, a
 
+class SortOfClevr3(Dataset):
+	"""SortOfClevr3 dataset."""
+	def __init__(self, root_dir, train = True, transform = None):
+		self.root_dir = root_dir
+		self.mode = 'train' if train else 'val'
+		self.transform = transform
+		self.data_dir = self.root_dir + 'sort-of-clevr3-{}.pickle'.format(self.mode)
+		self.load_data()
+
+	def load_data(self):
+		with open(self.data_dir, 'rb') as f:
+			self.data = pickle.load(f)
+		self.idx_to_color = sort_of_clevr_generator3.color_dict
+		self.idx_to_question = sort_of_clevr_generator3.question_type_dict
+		self.idx_to_answer = sort_of_clevr_generator3.answer_dict
+		self.c_size = len(self.idx_to_color)
+		self.q_size = len(self.idx_to_question)
+		self.a_size = len(self.idx_to_answer)
+
+	def __len__(self):
+		return len(self.data * 48)
+
+	def __getitem__(self, idx):
+		image, rel, non_rel = self.data[idx//48]
+		# print(image)
+		# image = transforms.toTensor(image)
+		index = idx % 48
+		if index < 18:
+			q, a = non_rel
+			q = q[index]
+			a = a[index]
+			q = np.where(q)[0]
+			q[1] = q[2] - 8
+			q = q[:2]
+
+		else:
+			q, a = rel
+			q = q[index - 18]
+			a = a[index - 18]
+			q = np.where(q)[0]
+			q[1] = q[2] - 5
+			q = q[:2]
+		image = torch.from_numpy(image.transpose(2, 0, 1)).float() / 255
+
+		q = torch.from_numpy(q).long()
+		return image, q, a
+
+
 
 def debug():
 	start = time()
-	test_dataloader = train_loader('sortofclevr2', batch_size = 4)
+	test_dataloader = train_loader('sortofclevr3', batch_size = 4)
 	b = time() - start
 	print(b)
 	start = time()
@@ -276,7 +335,9 @@ def debug():
 
 
 def make_data():
-	train_dataloader = train_loader('sortclevr2', batch_size = 4)
+	train_dataloader = train_loader('sortclevr3', batch_size = 4)
 	train_dataloader.dataset.load_data()
 # make_data()
-# debug()
+
+if __name__ =='__main__':
+	debug()

@@ -7,6 +7,7 @@ from skimage.draw import circle
 from skimage.draw import rectangle
 from skimage.draw import polygon
 from pathlib import Path
+import argparse
 home = str(Path.home())
 
 if __name__ == '__main__':
@@ -22,14 +23,15 @@ if __name__ == '__main__':
 	test_size = args.test_size
 	img_size = args.image_size
 	size = args.size
+	closest = args.closest
 
 slack = 5
 num_shape = 2
 num_rel_qst = 5
 question_size = 11 + (num_rel_qst - 3)  ##6 for one-hot vector of color, 2 for question type, 3 for question subtype
 """Answer : [yes, no, rectangle, circle, r, g, b, o, k, y]"""
-answer_size_before_color = 10 +num_shape  # 0 ~ 9 answer_dict
-answer_size_before_count = 4  # 0 ~ 4
+answer_size_before_color = 10 + num_shape - 2 # 0 ~ 9 answer_dict
+answer_size_before_count = 4 + num_shape - 2  # 0 ~ 4
 
 # 3 for question subtype
 """Answer : [yes, no, rectangle, circle, r, g, b, o, k, y]"""
@@ -150,7 +152,7 @@ def center_generate(objects):
         center = np.random.randint(0 + size + slack, img_size - size - slack, 2)
         if len(objects) > 0:
             for name, c, shape in objects:
-                if ((center - c) ** 2).sum() < (3 * (size * 2) ** 2):
+                if ((center - c) ** 2).sum() < (closest * (size * 2) ** 2):
                     pas = False
         if pas:
             return center
@@ -467,9 +469,9 @@ def generate_data(data_option=None):
 	if not os.path.exists(filename):
 
 		print('building test datasets...')
-		test_datasets = [build_dataset() for _ in range(test_size)]
+		test_datasets = [build_dataset_all_question() for _ in range(test_size)]
 		print('building train datasets...')
-		train_datasets = [build_dataset() for _ in range(train_size)]
+		train_datasets = [build_dataset_all_question() for _ in range(train_size)]
 
 		# img_count = 0
 		# cv2.imwrite(os.path.join(dirs,'{}.png'.format(img_count)), cv2.resize(train_datasets[0][0]*255, (512,512)))

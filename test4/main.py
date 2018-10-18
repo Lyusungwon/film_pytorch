@@ -15,7 +15,7 @@ import dataloader
 parser = argparser.default_parser()
 # Input
 parser.add_argument('--name', type=str, default='rn')
-parser.add_argument('--dataset', type=str, default='sortofclevr2')
+parser.add_argument('--dataset', type=str, default='sortofclevr3')
 # Convolution
 parser.add_argument('--cv-filter', type=int, default=32)
 parser.add_argument('--cv-kernel', type=int, default=3)

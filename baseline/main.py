@@ -15,7 +15,7 @@ import dataloader
 parser = argparser.default_parser()
 # Input
 parser.add_argument('--name', type=str, default='rn')
-parser.add_argument('--dataset', type=str, default='sortofclevr2')
+parser.add_argument('--dataset', type=str, default='sortofclevr3')
 # Convolution
 parser.add_argument('--cv-filter', type=int, default=32)
 parser.add_argument('--cv-kernel', type=int, default=3)
@@ -138,7 +138,6 @@ def train(epoch):
         loss = F.cross_entropy(output, answer)
         loss.backward()
         optimizer.step()
-        output = F.softmax(output)
         pred = torch.max(output.data, 1)[1]
         correct = (pred == answer).sum()
         train_loss += loss.item()
@@ -195,7 +194,6 @@ def test(epoch):
         relations = g_theta(encoded)
         relations_sum = relations.sum(1)
         output = f_phi(relations_sum)
-        output = F.softmax(output)
         loss = F.cross_entropy(output, answer)
         test_loss += loss.item()
         pred = torch.max(output.data, 1)[1]
