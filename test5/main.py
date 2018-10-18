@@ -119,7 +119,7 @@ def encode(objects, code):
 
 def pair(coordinate_encoded, question_encoded, logits):
     selection = F.softmax(logits.squeeze(2))
-    selected = torch.bmm(selection.unsqueeze(1), coordinate_encoded).expand_as(color_encoded)
+    selected = torch.bmm(selection.unsqueeze(1), coordinate_encoded).expand_as(coordinate_encoded)
     pairs = torch.cat([question_encoded, selected], 2)
     return pairs
 
