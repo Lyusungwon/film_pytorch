@@ -77,7 +77,7 @@ gt_layout = [args.gt_hidden for i in range(args.gt_layer)]
 if args.dataset == 'clevr':
     gt_layout.insert(0, (args.cv_filter + 2) + args.te_hidden)
 else:
-    gt_layout.insert(0, 2 * (args.cv_filter + 2 + args.te_embedding))
+    gt_layout.insert(0, 2 * (args.cv_filter + 2) + args.te_embedding)
 fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
 
 conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
