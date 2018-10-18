@@ -138,6 +138,7 @@ def train(epoch):
         loss = F.cross_entropy(output, answer)
         loss.backward()
         optimizer.step()
+        output = F.softmax(output)
         pred = torch.max(output.data, 1)[1]
         correct = (pred == answer).sum()
         train_loss += loss.item()
@@ -194,6 +195,7 @@ def test(epoch):
         relations = g_theta(encoded)
         relations_sum = relations.sum(1)
         output = f_phi(relations_sum)
+        output = F.softmax(output)
         loss = F.cross_entropy(output, answer)
         test_loss += loss.item()
         pred = torch.max(output.data, 1)[1]
