@@ -2,9 +2,7 @@ import argparse
 import os
 import numpy as np
 import random
-# import cPickle as pickle
 import pickle
-
 from skimage.draw import circle
 from skimage.draw import rectangle
 from pathlib import Path
@@ -65,9 +63,8 @@ question_type_dict = {
 			5: 'co'
 		}
 
-answer_size_before_color = 10 # 0 ~ 9 answer_dict
 answer_size_before_count = 4 # 0 ~ 4
-
+answer_size_before_color = 10 # 0 ~ 9 answer_dict
 answer_dict = {
 			0: 'y',
 			1: 'n',
@@ -229,7 +226,7 @@ def generate_data(data_option=None):
 	except:
 		print('directory {} already exists'.format(dirs))
 
-	filename = os.path.join(dirs, 'sort-of-clevr.pickle')
+	filename = os.path.join(dirs, 'sort-of-clevr2-train.pickle')
 
 	if not os.path.exists(filename):
 

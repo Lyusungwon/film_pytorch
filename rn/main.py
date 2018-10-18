@@ -17,24 +17,23 @@ parser = argparser.default_parser()
 parser.add_argument('--name', type=str, default='rn')
 parser.add_argument('--dataset', type=str, default='sortofclevr2')
 # Convolution
-parser.add_argument('--cv-filter', type=int, default=24)
+parser.add_argument('--cv-filter', type=int, default=32)
 parser.add_argument('--cv-kernel', type=int, default=3)
 parser.add_argument('--cv-stride', type=int, default=2)
 parser.add_argument('--cv-layer', type=int, default=4)
 parser.add_argument('--cv-layernorm', action='store_false')
 # Text Encoder
-parser.add_argument('--te-embedding', type=int, default=8)
+parser.add_argument('--te-embedding', type=int, default=1)
 parser.add_argument('--te-hidden', type=int, default=128)
 parser.add_argument('--te-layer', type=int, default=1)
 # g theta
-parser.add_argument('--gt-hidden', type=int, default=256)
+parser.add_argument('--gt-hidden', type=int, default=128)
 parser.add_argument('--gt-layer', type=int, default=4)
 # f phi
-parser.add_argument('--fp-hidden', type=int, default=256)
-parser.add_argument('--fp-dropout', type=int, default=2)
+parser.add_argument('--fp-hidden', type=int, default=128)
+parser.add_argument('--fp-dropout', type=int, default=5)
 parser.add_argument('--fp-dropout-rate', type=float, default=0.2)
-parser.add_argument('--fp-layer', type=int, default=3)
-
+parser.add_argument('--fp-layer', type=int, default=4)
 
 args = parser.parse_args()
 
@@ -76,7 +75,7 @@ fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)
 
 conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
 g_theta = model.MLP(gt_layout).to(device)
-f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last=True).to(device)
+f_phi = model.MLP(fp_layout).to(device)
 if args.dataset == 'clevr':
 	text_encoder = model.Text_encoder(train_loader.dataset.q_size, args.te_embedding, args.te_hidden, args.te_layer).to(
 		device)
@@ -97,7 +96,7 @@ log = args.log_directory + args.name + '/' + args.time_stamp + config + '/'
 writer = SummaryWriter(log)
 
 optimizer = optim.Adam(
-	list(conv.parameters()) + list(g_theta.parameters()) + list(f_phi.parameters()) + list(text_encoder.parameters()),
+	list(conv.parameters()) + list(text_encoder.parameters()) + list(g_theta.parameters()) + list(f_phi.parameters()),
 	lr=args.lr)
 
 
@@ -105,8 +104,6 @@ def object_pair(images, questions):
 	n, c, h, w = images.size()
 	o = h * w
 	hd = questions.size(1)
-	# coordinate = torch.linspace(-1, 1, o).view(1, o, 1).expand(n, o, 1).to(device)
-	# coordinate = torch.zeros(n, o, 1).to(device)
 	x_coordinate = torch.linspace(-1, 1, h).view(1, h, 1, 1).expand(n, h, w, 1).contiguous().view(n, o, 1).to(device)
 	y_coordinate = torch.linspace(-1, 1, w).view(1, 1, w, 1).expand(n, h, w, 1).contiguous().view(n, o, 1).to(device)
 	images = images.view(n, c, o).transpose(1, 2)
@@ -118,11 +115,11 @@ def object_pair(images, questions):
 	return pairs
 
 
-def lower_sum(relations):
-	n, h, w, l = relations.size()
-	mask = torch.ones([h, w]).tril().unsqueeze(0).unsqueeze(3).to(device)
-	relations = relations * mask
-	return relations.sum(2).sum(1)
+# def lower_sum(relations):
+# 	n, h, w, l = relations.size()
+# 	mask = torch.ones([h, w]).tril().unsqueeze(0).unsqueeze(3).to(device)
+# 	relations = relations * mask
+# 	return relations.sum(2).sum(1)
 
 
 def train(epoch):
@@ -133,16 +130,16 @@ def train(epoch):
 	batch_num = 0
 	batch_loss = 0
 	batch_correct = 0
-	g_theta.train()
-	f_phi.train()
 	conv.train()
 	text_encoder.train()
+	g_theta.train()
+	f_phi.train()
 	for batch_idx, (image, question, answer) in enumerate(train_loader):
 		batch_size = image.size()[0]
 		optimizer.zero_grad()
 		image = image.to(device)
 		answer = answer.to(device)
-		objects = conv(image)
+		objects = conv(image * 2 - 1)
 		if args.dataset == 'clevr':
 			question = PackedSequence(question.data.to(device), question.batch_sizes)
 		else:
@@ -151,7 +148,7 @@ def train(epoch):
 		questions = text_encoder(question)
 		pairs = object_pair(objects, questions)
 		relations = g_theta(pairs)
-		relations_sum = lower_sum(relations)
+		relations_sum = relations.sum(1).sum(2)
 		output = f_phi(relations_sum)
 		loss = F.cross_entropy(output, answer)
 		loss.backward()
@@ -190,10 +187,10 @@ def train(epoch):
 
 
 def test(epoch):
-	g_theta.eval()
-	f_phi.eval()
 	conv.eval()
 	text_encoder.eval()
+	g_theta.eval()
+	f_phi.eval()
 	test_loss = 0
 	q_correct = defaultdict(lambda: 0)
 	q_num = defaultdict(lambda: 0)
@@ -201,7 +198,7 @@ def test(epoch):
 		batch_size = image.size()[0]
 		image = image.to(device)
 		answer = answer.to(device)
-		objects = conv(image)
+		objects = conv(image * 2 - 1)
 		if args.dataset == 'clevr':
 			question = PackedSequence(question.data.to(device), question.batch_sizes)
 		else:
@@ -210,7 +207,7 @@ def test(epoch):
 		questions = text_encoder(question)
 		pairs = object_pair(objects, questions)
 		relations = g_theta(pairs)
-		relations_sum = lower_sum(relations)
+		relations_sum = relations.sum(1).sum(2)
 		output = f_phi(relations_sum)
 		loss = F.cross_entropy(output, answer)
 		test_loss += loss.item()
@@ -234,7 +231,7 @@ def test(epoch):
 				writer.add_image('Image', torch.cat([image[:n]]), epoch)
 				writer.add_text('QA', '\n'.join(text), epoch)
 			else:
-				image = F.pad(image[:n], (0, 0, 0, 20), mode='constant', value=1).transpose(1, 2).transpose(2, 3)
+				image = F.pad(image[:n], (0, 0, 0, args.input_h // 3), mode='constant', value=1).transpose(1, 2).transpose(2, 3)
 				image = image.cpu().numpy()
 				for i in range(n):
 					cv2.line(image[i], (args.input_w // 2, 0), (args.input_w // 2, args.input_h), (0, 0, 0), 1)
@@ -245,16 +242,18 @@ def test(epoch):
 						train_loader.dataset.idx_to_question[question[i, 1].item()],
 						train_loader.dataset.idx_to_answer[answer[i].item()],
 						train_loader.dataset.idx_to_answer[pred[i].item()]),
-								(2, args.input_h + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+								(2, args.input_h + args.input_h // 6), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 				image = torch.from_numpy(image).transpose(2, 3).transpose(1, 2)
 				writer.add_image('Image', torch.cat([image]), epoch)
 	print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
 		test_loss / len(test_loader.dataset), sum(q_correct.values()) / len(test_loader.dataset)))
 	writer.add_scalar('Test loss', test_loss / len(test_loader.dataset), epoch)
 	q_acc = {}
-	for i in range(6):
+	for i in range(train_loader.dataset.q_size):
 		q_acc['question {}'.format(str(i))] = q_correct[i] / q_num[i]
 	writer.add_scalars('Test accuracy per question', q_acc, epoch)
+	writer.add_scalar('Test non-rel accuracy', sum(q_correct.values()[:train_loader.dataset.q_size//2]) / sum(q_num.values()[:train_loader.dataset.q_size//2]), epoch)
+	writer.add_scalar('Test rel accuracy', sum(q_correct.values()[train_loader.dataset.q_size//2:]) / sum(q_num.values()[train_loader.dataset.q_size//2:]), epoch)
 	writer.add_scalar('Test total accuracy', sum(q_correct.values()) / len(test_loader.dataset), epoch)
 
 

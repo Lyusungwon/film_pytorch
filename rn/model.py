@@ -18,9 +18,7 @@ class MLP(nn.Module):
             net.append(nn.ReLU(inplace=True))
             if self.dropout == n + 1:
                net.append(nn.Dropout(self.dropout_rate))
-        if self.last:
-            net = net[:-1]
-        net = nn.ModuleList(net)
+        net = nn.ModuleList(net[:-1])
         self.net = nn.Sequential(*net)
         print(self.net)
 

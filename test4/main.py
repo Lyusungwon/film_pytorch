@@ -87,7 +87,7 @@ else:
     text_encoder = model.Text_embedding(train_loader.dataset.c_size, train_loader.dataset.q_size, args.te_embedding).to(device)
 h_psi = model.MLP(hp_layout).to(device)
 g_theta = model.MLP(gt_layout).to(device)
-f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last=True).to(device)
+f_phi = model.MLP(fp_layout).to(device)
 
 if args.load_model != '000000000000':
     conv.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/conv.pt'))
@@ -153,7 +153,7 @@ def train(epoch):
         optimizer.zero_grad()
         image = image.to(device)
         answer = answer.to(device)
-        objects = conv(image)
+        objects = conv(image * 2 - 1)
         if args.dataset == 'clevr':
             question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
@@ -215,7 +215,7 @@ def test(epoch):
         batch_size = image.size()[0]
         image = image.to(device)
         answer = answer.to(device)
-        objects = conv(image)
+        objects = conv(image * 2 - 1)
         if args.dataset == 'clevr':
             question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
@@ -241,7 +241,8 @@ def test(epoch):
             if args.dataset == 'clevr':
                 pad_question, lengths = pad_packed_sequence(question)
                 pad_question = pad_question.transpose(0, 1)
-                question_text = [' '.join([train_loader.dataset.idx_to_word[i] for i in q]) for q in pad_question.cpu().numpy()[:n]]
+                question_text = [' '.join([train_loader.dataset.idx_to_word[i] for i in q]) for q in
+                                 pad_question.cpu().numpy()[:n]]
                 answer_text = [train_loader.dataset.answer_idx_to_word[a] for a in answer.cpu().numpy()[:n]]
                 text = []
                 for j, (q, a) in enumerate(zip(question_text, answer_text)):
@@ -249,28 +250,34 @@ def test(epoch):
                 writer.add_image('Image', torch.cat([image[:n]]), epoch)
                 writer.add_text('QA', '\n'.join(text), epoch)
             else:
-                image = F.pad(image[:n], (0, 0, 0, 20), mode='constant', value=1).transpose(1,2).transpose(2,3)
+                image = F.pad(image[:n], (0, 0, 0, args.input_h // 3), mode='constant', value=1).transpose(1,
+                                                                                                           2).transpose(
+                    2, 3)
                 image = image.cpu().numpy()
                 for i in range(n):
-                    cv2.line(image[i], (args.input_w//2, 0), (args.input_w//2, args.input_h), (0, 0, 0), 1)
-                    cv2.line(image[i], (0, args.input_h//2), (args.input_w, args.input_h//2), (0, 0, 0), 1)
+                    cv2.line(image[i], (args.input_w // 2, 0), (args.input_w // 2, args.input_h), (0, 0, 0), 1)
+                    cv2.line(image[i], (0, args.input_h // 2), (args.input_w, args.input_h // 2), (0, 0, 0), 1)
                     cv2.line(image[i], (0, args.input_h), (args.input_w, args.input_h), (0, 0, 0), 1)
                     cv2.putText(image[i], '{} {} {} {}'.format(
                         train_loader.dataset.idx_to_color[question[i, 0].item()],
                         train_loader.dataset.idx_to_question[question[i, 1].item()],
                         train_loader.dataset.idx_to_answer[answer[i].item()],
                         train_loader.dataset.idx_to_answer[pred[i].item()]),
-                        (2, args.input_h + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
-                image = torch.from_numpy(image).transpose(2,3).transpose(1,2)
+                                (2, args.input_h + args.input_h // 6), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+                image = torch.from_numpy(image).transpose(2, 3).transpose(1, 2)
                 writer.add_image('Image', torch.cat([image]), epoch)
     print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
-        test_loss / len(test_loader.dataset), sum(q_correct.values())/len(test_loader.dataset)))
+        test_loss / len(test_loader.dataset), sum(q_correct.values()) / len(test_loader.dataset)))
     writer.add_scalar('Test loss', test_loss / len(test_loader.dataset), epoch)
     q_acc = {}
-    for i in range(6):
-        q_acc['question {}'.format(str(i))] = q_correct[i]/q_num[i]
+    for i in range(train_loader.dataset.q_size):
+        q_acc['question {}'.format(str(i))] = q_correct[i] / q_num[i]
     writer.add_scalars('Test accuracy per question', q_acc, epoch)
-    writer.add_scalar('Test total accuracy', sum(q_correct.values())/len(test_loader.dataset), epoch)
+    writer.add_scalar('Test non-rel accuracy', sum(q_correct.values()[:train_loader.dataset.q_size // 2]) / sum(
+        q_num.values()[:train_loader.dataset.q_size // 2]), epoch)
+    writer.add_scalar('Test rel accuracy', sum(q_correct.values()[train_loader.dataset.q_size // 2:]) / sum(
+        q_num.values()[train_loader.dataset.q_size // 2:]), epoch)
+    writer.add_scalar('Test total accuracy', sum(q_correct.values()) / len(test_loader.dataset), epoch)
 
 
 if __name__ == '__main__':
