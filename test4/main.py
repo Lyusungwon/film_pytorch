@@ -17,26 +17,26 @@ parser = argparser.default_parser()
 parser.add_argument('--name', type=str, default='rn')
 parser.add_argument('--dataset', type=str, default='sortofclevr2')
 # Convolution
-parser.add_argument('--cv-filter', type=int, default=24)
+parser.add_argument('--cv-filter', type=int, default=32)
 parser.add_argument('--cv-kernel', type=int, default=3)
 parser.add_argument('--cv-stride', type=int, default=2)
 parser.add_argument('--cv-layer', type=int, default=4)
 parser.add_argument('--cv-layernorm', action='store_false')
 # Text Encoder
-parser.add_argument('--te-embedding', type=int, default=8)
+parser.add_argument('--te-embedding', type=int, default=1)
 parser.add_argument('--te-hidden', type=int, default=128)
 parser.add_argument('--te-layer', type=int, default=1)
 # h psi
 parser.add_argument('--hp-hidden', type=int, default=128)
 parser.add_argument('--hp-layer', type=int, default=4)
 # g theta
-parser.add_argument('--gt-hidden', type=int, default=1000)
+parser.add_argument('--gt-hidden', type=int, default=128)
 parser.add_argument('--gt-layer', type=int, default=4)
 # f phi
-parser.add_argument('--fp-hidden', type=int, default=256)
-parser.add_argument('--fp-dropout', type=int, default=2)
+parser.add_argument('--fp-hidden', type=int, default=128)
+parser.add_argument('--fp-dropout', type=int, default=5)
 parser.add_argument('--fp-dropout-rate', type=float, default=0.2)
-parser.add_argument('--fp-layer', type=int, default=3)
+parser.add_argument('--fp-layer', type=int, default=4)
 
 
 args = parser.parse_args()
