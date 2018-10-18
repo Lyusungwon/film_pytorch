@@ -129,7 +129,7 @@ def train(epoch):
         else:
             question = question.to(device)
             # answer = answer.squeeze(1)
-        objects = conv(image)
+        objects = conv(image * 2 - 1)
         questions = text_encoder(question)
         encoded = object_encode(objects, questions)
         relations = g_theta(encoded)
@@ -172,10 +172,10 @@ def train(epoch):
 
 
 def test(epoch):
-    g_theta.eval()
-    f_phi.eval()
     conv.eval()
     text_encoder.eval()
+    g_theta.eval()
+    f_phi.eval()
     test_loss = 0
     q_correct = defaultdict(lambda: 0)
     q_num = defaultdict(lambda: 0)
@@ -188,7 +188,7 @@ def test(epoch):
         else:
             question = question.to(device)
             # answer = answer.squeeze(1)
-        objects = conv(image)
+        objects = conv(image * 2 - 1)
         questions = text_encoder(question)
         encoded = object_encode(objects, questions)
         relations = g_theta(encoded)
@@ -200,8 +200,8 @@ def test(epoch):
         correct = (pred == answer)
         for i in range(train_loader.dataset.q_size):
             idx = question[:, 1] == i
-            q_correct[i] += (correct * idx).sum().item()
             q_num[i] += idx.sum().item()
+            q_correct[i] += (correct * idx).sum().item()
         if batch_idx == 0:
             n = min(batch_size, 4)
             if args.dataset == 'clevr':
@@ -233,7 +233,7 @@ def test(epoch):
         test_loss / len(test_loader.dataset), sum(q_correct.values())/len(test_loader.dataset)))
     writer.add_scalar('Test loss', test_loss / len(test_loader.dataset), epoch)
     q_acc = {}
-    for i in range(6):
+    for i in range(train_loader.dataset.q_size):
         q_acc['question {}'.format(str(i))] = q_correct[i]/q_num[i]
     writer.add_scalars('Test accuracy per question', q_acc, epoch)
     writer.add_scalar('Test total accuracy', sum(q_correct.values())/len(test_loader.dataset), epoch)
@@ -243,9 +243,9 @@ if __name__ == '__main__':
     for epoch in range(args.start_epoch, args.start_epoch + args.epochs):
         train(epoch)
         test(epoch)
-        torch.save(g_theta.state_dict(), log + 'g_theta.pt')
-        torch.save(f_phi.state_dict(), log + 'f_phi.pt')
         torch.save(conv.state_dict(), log + 'conv.pt')
         torch.save(text_encoder.state_dict(), log + 'text_encoder.pt')
+        torch.save(g_theta.state_dict(), log + 'g_theta.pt')
+        torch.save(f_phi.state_dict(), log + 'f_phi.pt')
         print('Model saved in ', log)
     writer.close()
