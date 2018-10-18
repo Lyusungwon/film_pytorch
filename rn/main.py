@@ -111,7 +111,7 @@ def object_pair(images, questions):
 	images1 = images.unsqueeze(1).expand(n, o, o, c + 2).contiguous()
 	images2 = images.unsqueeze(2).expand(n, o, o, c + 2).contiguous()
 	questions = questions.unsqueeze(1).unsqueeze(2).expand(n, o, o, hd)
-	pairs = torch.cat([images1, images2, questions], 3).transpose(2, 3).transpose(1, 2).view(n, -1, o**2)
+	pairs = torch.cat([images1, images2, questions], 3).view(n, o**2, -1)
 	return pairs
 
 
