@@ -162,7 +162,7 @@ def train(epoch):
         code = text_encoder(question)
         color_encoded, question_encoded = encode(objects, code)
         logits = h_psi(color_encoded)
-        pairs = pair(question_encoded, color_encoded, logits)
+        pairs = pair(color_encoded, question_encoded, logits)
         relations = g_theta(pairs)
         relations_sum = relations.sum(1)
         output = f_phi(relations_sum)

@@ -7,8 +7,8 @@ def default_parser():
     parser = argparse.ArgumentParser(description='parser')
     parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 128)')
-    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
-                        help='number of epochs to train (default: 1000)')
+    parser.add_argument('--epochs', type=int, default=500, metavar='N',
+                        help='number of epochs to train (default: 500)')
     parser.add_argument('--lr', type=float, default=2.5e-4, metavar='N',
                         help='learning rate (default: 2.5e-4)')
     # parser.add_argument('--lr-term', type=int, default=500, metavar='N',

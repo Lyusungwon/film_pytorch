@@ -26,6 +26,9 @@ parser.add_argument('--cv-layernorm', action='store_false')
 parser.add_argument('--te-embedding', type=int, default=8)
 parser.add_argument('--te-hidden', type=int, default=128)
 parser.add_argument('--te-layer', type=int, default=1)
+# h psi
+parser.add_argument('--hp-hidden', type=int, default=128)
+parser.add_argument('--hp-layer', type=int, default=4)
 # g theta
 parser.add_argument('--gt-hidden', type=int, default=1000)
 parser.add_argument('--gt-layer', type=int, default=4)
@@ -54,12 +57,14 @@ else:
     args.input_w = args.image_size
 
 config_list = [args.name, args.dataset, args.epochs, args.batch_size, args.lr, args.device,
-               'inp', args.channel_size] + data_config + \
-               ['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_layernorm,
+                'inp', args.channel_size] + data_config + \
+                ['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_layernorm,
                 'te', args.te_embedding, args.te_hidden, args.te_layer,
+                'hp', args.hp_hidden, args.hp_layer,
                 'gt', args.gt_hidden, args.gt_layer,
                 'fp', args.fp_hidden, args.fp_dropout, args.fp_dropout_rate, args.fp_layer,
-                'baseline']
+                'test5']
+
 config = '_'.join(map(str, config_list))
 print("Config:", config)
 
@@ -67,11 +72,12 @@ train_loader = dataloader.train_loader(args.dataset, args.data_directory, args.b
 test_loader = dataloader.test_loader(args.dataset, args.data_directory, args.batch_size, data_config)
 
 cv_layout = [(args.cv_filter, args.cv_kernel, args.cv_stride) for i in range(args.cv_layer)]
+hp_layout = [args.cv_filter + 2 + args.te_embedding] + [args.hp_hidden for i in range(args.hp_layer - 1)] + [1]
 gt_layout = [args.gt_hidden for i in range(args.gt_layer)]
 if args.dataset == 'clevr':
     gt_layout.insert(0, (args.cv_filter + 2) + args.te_hidden)
 else:
-    gt_layout.insert(0, (args.cv_filter + 2) + args.te_embedding * 2)
+    gt_layout.insert(0, 2 * (args.cv_filter + 2 + args.te_embedding))
 fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
 
 conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
@@ -79,12 +85,14 @@ if args.dataset == 'clevr':
     text_encoder = model.Text_encoder(train_loader.dataset.q_size, args.te_embedding, args.te_hidden, args.te_layer).to(device)
 else:
     text_encoder = model.Text_embedding(train_loader.dataset.c_size, train_loader.dataset.q_size, args.te_embedding).to(device)
+h_psi = model.MLP(hp_layout).to(device)
 g_theta = model.MLP(gt_layout).to(device)
 f_phi = model.MLP(fp_layout, args.fp_dropout, args.fp_dropout_rate, last=True).to(device)
 
 if args.load_model != '000000000000':
     conv.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/conv.pt'))
     text_encoder.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/text_encoder.pt'))
+    h_psi.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/h_psi.pt'))
     g_theta.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/g_theta.pt'))
     f_phi.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/f_phi.pt'))
     args.time_stamp = args.load_model[:12]
@@ -93,18 +101,38 @@ if args.load_model != '000000000000':
 log = args.log_directory + args.name + '/' + args.time_stamp + config + '/'
 writer = SummaryWriter(log)
 
-optimizer = optim.Adam(list(conv.parameters()) + list(text_encoder.parameters()) + list(g_theta.parameters()) + list(f_phi.parameters()), lr=args.lr)
+optimizer = optim.Adam(list(conv.parameters()) + list(text_encoder.parameters()) + list(h_psi.parameters()) + list(g_theta.parameters()) + list(f_phi.parameters()), lr=args.lr)
 
 
-def object_encode(images, questions):
-    n, c, h, w = images.size()
+def encode(objects, code):
+    n, c, h, w = objects.size()
+    o = h * w
+    hd = code.size(1)
+    x_coordinate = torch.linspace(-h/2, h/2, h).view(1, 1, h, 1).expand(n, 1, h, w).to(device)
+    y_coordinate = torch.linspace(-w/2, w/2, w).view(1, 1, 1, w).expand(n, 1, h, w).to(device)
+    coordinate_encoded = torch.cat([objects, x_coordinate, y_coordinate], 1)
+    color_code, question_code = torch.chunk(code.unsqueeze(2).unsqueeze(3).expand(n, hd, h, w), 2, 1)
+    color_encoded = torch.cat([coordinate_encoded, color_code], 1).view(n, -1, o).transpose(1, 2)
+    question_encoded = torch.cat([coordinate_encoded, question_code], 1).view(n, -1, o).transpose(1, 2)
+    return color_encoded, question_encoded, coordinate_encoded
+
+
+def pair(coordinate_encoded, question_encoded, logits):
+    selection = F.softmax(logits.squeeze(2))
+    selected = torch.bmm(selection.unsqueeze(1), coordinate_encoded).expand_as(color_encoded)
+    pairs = torch.cat([question_encoded, selected], 2)
+    return pairs
+
+
+def object_encode(objects, questions):
+    n, c, h, w = objects.size()
     o = h * w
     hd = questions.size(1)
     x_coordinate = torch.linspace(-h/2, h/2, h).view(1, 1, h, 1).expand(n, 1, h, w).to(device)
     y_coordinate = torch.linspace(-w/2, w/2, w).view(1, 1, 1, w).expand(n, 1, h, w).to(device)
     questions = questions.unsqueeze(2).unsqueeze(3).expand(n, hd, h, w)
-    images = torch.cat([images, x_coordinate, y_coordinate, questions], 1).view(n, -1, o).transpose(1, 2)
-    return images
+    objects = torch.cat([objects, x_coordinate, y_coordinate, questions], 1).view(n, -1, o).transpose(1, 2)
+    return objects
 
 
 def train(epoch):
@@ -115,24 +143,27 @@ def train(epoch):
     batch_num = 0
     batch_loss = 0
     batch_correct = 0
-    conv.train()
-    text_encoder.train()
+    h_psi.train()
     g_theta.train()
     f_phi.train()
+    conv.train()
+    text_encoder.train()
     for batch_idx, (image, question, answer) in enumerate(train_loader):
         batch_size = image.size()[0]
         optimizer.zero_grad()
         image = image.to(device)
         answer = answer.to(device)
+        objects = conv(image)
         if args.dataset == 'clevr':
             question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
             question = question.to(device)
             # answer = answer.squeeze(1)
-        objects = conv(image)
-        questions = text_encoder(question)
-        encoded = object_encode(objects, questions)
-        relations = g_theta(encoded)
+        code = text_encoder(question)
+        color_encoded, question_encoded, coordinate_encoded = encode(objects, code)
+        logits = h_psi(color_encoded)
+        pairs = pair(coordinate_encoded, question_encoded, logits)
+        relations = g_theta(pairs)
         relations_sum = relations.sum(1)
         output = f_phi(relations_sum)
         loss = F.cross_entropy(output, answer)
@@ -174,6 +205,7 @@ def train(epoch):
 def test(epoch):
     g_theta.eval()
     f_phi.eval()
+    h_psi.eval()
     conv.eval()
     text_encoder.eval()
     test_loss = 0
@@ -183,15 +215,17 @@ def test(epoch):
         batch_size = image.size()[0]
         image = image.to(device)
         answer = answer.to(device)
+        objects = conv(image)
         if args.dataset == 'clevr':
             question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
             question = question.to(device)
             # answer = answer.squeeze(1)
-        objects = conv(image)
-        questions = text_encoder(question)
-        encoded = object_encode(objects, questions)
-        relations = g_theta(encoded)
+        code = text_encoder(question)
+        color_encoded, question_encoded = encode(objects, code)
+        logits = h_psi(color_encoded)
+        pairs = pair(question_encoded, color_encoded, logits)
+        relations = g_theta(pairs)
         relations_sum = relations.sum(1)
         output = f_phi(relations_sum)
         loss = F.cross_entropy(output, answer)
@@ -243,6 +277,7 @@ if __name__ == '__main__':
     for epoch in range(args.start_epoch, args.start_epoch + args.epochs):
         train(epoch)
         test(epoch)
+        torch.save(h_psi.state_dict(), log + 'h_psi.pt')
         torch.save(g_theta.state_dict(), log + 'g_theta.pt')
         torch.save(f_phi.state_dict(), log + 'f_phi.pt')
         torch.save(conv.state_dict(), log + 'conv.pt')
