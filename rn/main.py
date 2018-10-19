@@ -254,8 +254,8 @@ def test(epoch):
 	q_corrects = list(q_correct.values())
 	q_nums = list(q_num.values())
 	writer.add_scalars('Test accuracy per question', q_acc, epoch)
-	writer.add_scalar('Test non-rel accuracy', sum(q_corrects[:train_loader.dataset.q_size//2]) / sum(q_nums[:train_loader.dataset.q_size//2]), epoch)
-	writer.add_scalar('Test rel accuracy', sum(q_corrects[train_loader.dataset.q_size//2:]) / sum(q_nums[train_loader.dataset.q_size//2:]), epoch)
+	writer.add_scalar('Test non-rel accuracy', sum(q_corrects[:3]) / sum(q_nums[:3]), epoch)
+	writer.add_scalar('Test rel accuracy', sum(q_corrects[3:]) / sum(q_nums[3:]), epoch)
 	writer.add_scalar('Test total accuracy', sum(q_correct.values()) / len(test_loader.dataset), epoch)
 
 
