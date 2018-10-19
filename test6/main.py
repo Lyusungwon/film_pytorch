@@ -1,0 +1,292 @@
+import time
+import torch
+import torch.optim as optim
+import torch.nn.functional as F
+from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
+from tensorboardX import SummaryWriter
+import model
+from collections import defaultdict
+import cv2
+import sys
+sys.path.append('..')
+import argparser
+import dataloader
+
+parser = argparser.default_parser()
+# Input
+parser.add_argument('--name', type=str, default='rn')
+parser.add_argument('--dataset', type=str, default='sortofclevr3')
+# Convolution
+parser.add_argument('--cv-filter', type=int, default=32)
+parser.add_argument('--cv-kernel', type=int, default=3)
+parser.add_argument('--cv-stride', type=int, default=2)
+parser.add_argument('--cv-layer', type=int, default=4)
+parser.add_argument('--cv-layernorm', action='store_false')
+# Text Encoder
+parser.add_argument('--te-embedding', type=int, default=1)
+parser.add_argument('--te-hidden', type=int, default=128)
+parser.add_argument('--te-layer', type=int, default=1)
+# h psi
+parser.add_argument('--hp-hidden', type=int, default=128)
+parser.add_argument('--hp-layer', type=int, default=3)
+# g theta
+parser.add_argument('--gt-hidden', type=int, default=128)
+parser.add_argument('--gt-layer', type=int, default=3)
+# f phi
+parser.add_argument('--fp-hidden', type=int, default=128)
+parser.add_argument('--fp-dropout', type=int, default=5)
+parser.add_argument('--fp-dropout-rate', type=float, default=0.2)
+parser.add_argument('--fp-layer', type=int, default=3)
+
+
+args = parser.parse_args()
+
+torch.manual_seed(args.seed)
+
+if args.device == 'cpu':
+    device = torch.device('cpu')
+else:
+    device = torch.device('cuda:{}'.format(args.device))
+    torch.cuda.set_device(args.device)
+
+if args.dataset == 'clevr':
+    data_config = [args.input_h, args.input_w, args.cpu_num]
+else:
+    data_config = [args.train_size, args.test_size, args.image_size, args.size, args.closest]
+    args.input_h = args.image_size
+    args.input_w = args.image_size
+
+config_list = [args.name, args.dataset, args.epochs, args.batch_size, args.lr, args.device,
+                'inp', args.channel_size] + data_config + \
+                ['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_layernorm,
+                'te', args.te_embedding, args.te_hidden, args.te_layer,
+                'hp', args.hp_hidden, args.hp_layer,
+                'gt', args.gt_hidden, args.gt_layer,
+                'fp', args.fp_hidden, args.fp_dropout, args.fp_dropout_rate, args.fp_layer,
+                'test6']
+
+config = '_'.join(map(str, config_list))
+print("Config:", config)
+
+train_loader = dataloader.train_loader(args.dataset, args.data_directory, args.batch_size, data_config)
+test_loader = dataloader.test_loader(args.dataset, args.data_directory, args.batch_size, data_config)
+
+cv_layout = [(args.cv_filter, args.cv_kernel, args.cv_stride) for i in range(args.cv_layer)]
+hp_layout = [args.cv_filter + 2 + args.te_embedding] + [args.hp_hidden for i in range(args.hp_layer - 1)] + [1]
+gt_layout = [args.gt_hidden for i in range(args.gt_layer)]
+if args.dataset == 'clevr':
+    gt_layout.insert(0, (args.cv_filter + 2) + args.te_hidden)
+else:
+    gt_layout.insert(0, 2 * (args.cv_filter + 2) + args.te_embedding)
+fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
+
+conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
+if args.dataset == 'clevr':
+    text_encoder = model.Text_encoder(train_loader.dataset.q_size, args.te_embedding, args.te_hidden, args.te_layer).to(device)
+else:
+    text_encoder = model.Text_embedding(train_loader.dataset.c_size, train_loader.dataset.q_size, args.te_embedding).to(device)
+h_psi = model.MLP(hp_layout).to(device)
+g_theta = model.MLP(gt_layout).to(device)
+f_phi = model.MLP(fp_layout).to(device)
+
+if args.load_model != '000000000000':
+    conv.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/conv.pt'))
+    text_encoder.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/text_encoder.pt'))
+    h_psi.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/h_psi.pt'))
+    g_theta.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/g_theta.pt'))
+    f_phi.load_state_dict(torch.load(args.log_directory + args.name + '/' + args.load_model + '/f_phi.pt'))
+    args.time_stamp = args.load_model[:12]
+    print('Model {} loaded.'.format(args.load_model))
+
+log = args.log_directory + args.name + '/' + args.time_stamp + config + '/'
+writer = SummaryWriter(log)
+
+optimizer = optim.Adam(list(conv.parameters()) + list(text_encoder.parameters()) + list(h_psi.parameters()) + list(g_theta.parameters()) + list(f_phi.parameters()), lr=args.lr)
+
+
+def encode(objects, code):
+    n, c, h, w = objects.size()
+    o = h * w
+    hd = code.size(1)
+    x_coordinate = torch.linspace(-h/2, h/2, h).view(1, 1, h, 1).expand(n, 1, h, w).to(device)
+    y_coordinate = torch.linspace(-w/2, w/2, w).view(1, 1, 1, w).expand(n, 1, h, w).to(device)
+    coordinate_encoded = torch.cat([objects, x_coordinate, y_coordinate], 1)
+    question = code.view(n, hd, 1, 1).expand(n, hd, h, w)
+    question_encoded = torch.cat([coordinate_encoded, question], 1).view(n, -1, o).transpose(1, 2)
+    return coordinate_encoded.view(n, -1, o).transpose(1, 2), question_encoded
+
+
+def pair(coordinate_encoded, question_encoded, logits):
+    selection = F.softmax(logits.squeeze(2))
+    selected = torch.bmm(selection.unsqueeze(1), coordinate_encoded).expand_as(coordinate_encoded)
+    pairs = torch.cat([question_encoded, selected], 2)
+    return pairs
+
+
+def object_encode(objects, questions):
+    n, c, h, w = objects.size()
+    o = h * w
+    hd = questions.size(1)
+    x_coordinate = torch.linspace(-h/2, h/2, h).view(1, 1, h, 1).expand(n, 1, h, w).to(device)
+    y_coordinate = torch.linspace(-w/2, w/2, w).view(1, 1, 1, w).expand(n, 1, h, w).to(device)
+    questions = questions.unsqueeze(2).unsqueeze(3).expand(n, hd, h, w)
+    objects = torch.cat([objects, x_coordinate, y_coordinate, questions], 1).view(n, -1, o).transpose(1, 2)
+    return objects
+
+
+def train(epoch):
+    epoch_start_time = time.time()
+    start_time = time.time()
+    train_loss = 0
+    train_correct = 0
+    batch_num = 0
+    batch_loss = 0
+    batch_correct = 0
+    h_psi.train()
+    g_theta.train()
+    f_phi.train()
+    conv.train()
+    text_encoder.train()
+    for batch_idx, (image, question, answer) in enumerate(train_loader):
+        batch_size = image.size()[0]
+        optimizer.zero_grad()
+        image = image.to(device)
+        answer = answer.to(device)
+        objects = conv(image * 2 - 1)
+        if args.dataset == 'clevr':
+            question = PackedSequence(question.data.to(device), question.batch_sizes)
+        else:
+            question = question.to(device)
+            # answer = answer.squeeze(1)
+        code = text_encoder(question)
+        coordinate_encoded, question_encoded = encode(objects, code)
+        logits = h_psi(question_encoded)
+        pairs = pair(coordinate_encoded, question_encoded, logits)
+        relations = g_theta(pairs)
+        relations_sum = relations.sum(1)
+        output = f_phi(relations_sum)
+        loss = F.cross_entropy(output, answer)
+        loss.backward()
+        optimizer.step()
+        pred = torch.max(output.data, 1)[1]
+        correct = (pred == answer).sum()
+        train_loss += loss.item()
+        train_correct += correct.item()
+        batch_num += batch_size
+        batch_loss += loss.item()
+        batch_correct += correct.item()
+        if batch_idx % args.log_interval == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)] Loss: {:.4f} / Time: {:.4f} / Acc: {:.4f}'.format(
+                epoch,
+                batch_idx * batch_size, len(train_loader.dataset),
+                100. * batch_idx / len(train_loader),
+                batch_loss / batch_num,
+                time.time() - start_time,
+                batch_correct / batch_num))
+            idx = epoch * len(train_loader) // args.log_interval + batch_idx // args.log_interval
+            writer.add_scalar('Batch loss', batch_loss / batch_num, idx)
+            writer.add_scalar('Batch accuracy', batch_correct / batch_num, idx)
+            writer.add_scalar('Batch time', time.time() - start_time, idx)
+            batch_num = 0
+            batch_loss = 0
+            batch_correct = 0
+            start_time = time.time()
+
+    print('====> Epoch: {} Average loss: {:.4f} / Time: {:.4f} / Accuracy: {:.4f}'.format(
+        epoch,
+        train_loss / len(train_loader.dataset),
+        time.time() - epoch_start_time,
+        train_correct / len(train_loader.dataset)))
+    writer.add_scalar('Train loss', train_loss / len(train_loader.dataset), epoch)
+    writer.add_scalar('Train accuracy', train_correct / len(train_loader.dataset), epoch)
+
+
+def test(epoch):
+    g_theta.eval()
+    f_phi.eval()
+    h_psi.eval()
+    conv.eval()
+    text_encoder.eval()
+    test_loss = 0
+    q_correct = defaultdict(lambda: 0)
+    q_num = defaultdict(lambda: 0)
+    for batch_idx, (image, question, answer) in enumerate(test_loader):
+        batch_size = image.size()[0]
+        image = image.to(device)
+        answer = answer.to(device)
+        objects = conv(image * 2 - 1)
+        if args.dataset == 'clevr':
+            question = PackedSequence(question.data.to(device), question.batch_sizes)
+        else:
+            question = question.to(device)
+            # answer = answer.squeeze(1)
+        code = text_encoder(question)
+        coordinate_encoded, question_encoded = encode(objects, code)
+        logits = h_psi(question_encoded)
+        pairs = pair(coordinate_encoded, question_encoded, logits)
+        relations = g_theta(pairs)
+        relations_sum = relations.sum(1)
+        output = f_phi(relations_sum)
+        loss = F.cross_entropy(output, answer)
+        test_loss += loss.item()
+        pred = torch.max(output.data, 1)[1]
+        correct = (pred == answer)
+        for i in range(train_loader.dataset.q_size):
+            idx = question[:, 1] == i
+            q_correct[i] += (correct * idx).sum().item()
+            q_num[i] += idx.sum().item()
+        if batch_idx == 0:
+            n = min(batch_size, 4)
+            if args.dataset == 'clevr':
+                pad_question, lengths = pad_packed_sequence(question)
+                pad_question = pad_question.transpose(0, 1)
+                question_text = [' '.join([train_loader.dataset.idx_to_word[i] for i in q]) for q in
+                                 pad_question.cpu().numpy()[:n]]
+                answer_text = [train_loader.dataset.answer_idx_to_word[a] for a in answer.cpu().numpy()[:n]]
+                text = []
+                for j, (q, a) in enumerate(zip(question_text, answer_text)):
+                    text.append('Quesetion {}: '.format(j) + question_text[j] + '/ Answer: ' + answer_text[j])
+                writer.add_image('Image', torch.cat([image[:n]]), epoch)
+                writer.add_text('QA', '\n'.join(text), epoch)
+            else:
+                image = F.pad(image[:n], (0, 0, 0, args.input_h // 3), mode='constant', value=1).transpose(1,
+                                                                                                           2).transpose(
+                    2, 3)
+                image = image.cpu().numpy()
+                for i in range(n):
+                    cv2.line(image[i], (args.input_w // 2, 0), (args.input_w // 2, args.input_h), (0, 0, 0), 1)
+                    cv2.line(image[i], (0, args.input_h // 2), (args.input_w, args.input_h // 2), (0, 0, 0), 1)
+                    cv2.line(image[i], (0, args.input_h), (args.input_w, args.input_h), (0, 0, 0), 1)
+                    cv2.putText(image[i], '{} {} {} {}'.format(
+                        train_loader.dataset.idx_to_color[question[i, 0].item()],
+                        train_loader.dataset.idx_to_question[question[i, 1].item()],
+                        train_loader.dataset.idx_to_answer[answer[i].item()],
+                        train_loader.dataset.idx_to_answer[pred[i].item()]),
+                                (2, args.input_h + args.input_h // 6), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+                image = torch.from_numpy(image).transpose(2, 3).transpose(1, 2)
+                writer.add_image('Image', torch.cat([image]), epoch)
+    print('====> Test set loss: {:.4f}\tAccuracy: {:.4f}'.format(
+        test_loss / len(test_loader.dataset), sum(q_correct.values()) / len(test_loader.dataset)))
+    writer.add_scalar('Test loss', test_loss / len(test_loader.dataset), epoch)
+    q_acc = {}
+    for i in range(train_loader.dataset.q_size):
+        q_acc['question {}'.format(str(i))] = q_correct[i] / q_num[i]
+    q_corrects = list(q_correct.values())
+    q_nums = list(q_num.values())
+    writer.add_scalars('Test accuracy per question', q_acc, epoch)
+    writer.add_scalar('Test non-rel accuracy', sum(q_corrects[:3]) / sum(q_nums[:3]), epoch)
+    writer.add_scalar('Test rel accuracy', sum(q_corrects[3:]) / sum(q_nums[3:]), epoch)
+    writer.add_scalar('Test total accuracy', sum(q_correct.values()) / len(test_loader.dataset), epoch)
+
+
+if __name__ == '__main__':
+    for epoch in range(args.start_epoch, args.start_epoch + args.epochs):
+        train(epoch)
+        test(epoch)
+        torch.save(h_psi.state_dict(), log + 'h_psi.pt')
+        torch.save(g_theta.state_dict(), log + 'g_theta.pt')
+        torch.save(f_phi.state_dict(), log + 'f_phi.pt')
+        torch.save(conv.state_dict(), log + 'conv.pt')
+        torch.save(text_encoder.state_dict(), log + 'text_encoder.pt')
+        print('Model saved in ', log)
+    writer.close()
