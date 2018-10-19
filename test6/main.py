@@ -72,7 +72,7 @@ train_loader = dataloader.train_loader(args.dataset, args.data_directory, args.b
 test_loader = dataloader.test_loader(args.dataset, args.data_directory, args.batch_size, data_config)
 
 cv_layout = [(args.cv_filter, args.cv_kernel, args.cv_stride) for i in range(args.cv_layer)]
-hp_layout = [args.cv_filter + 2 + args.te_embedding] + [args.hp_hidden for i in range(args.hp_layer - 1)] + [1]
+hp_layout = [args.cv_filter + 2 + args.te_embedding * 2] + [args.hp_hidden for i in range(args.hp_layer - 1)] + [1]
 gt_layout = [args.gt_hidden for i in range(args.gt_layer)]
 if args.dataset == 'clevr':
     gt_layout.insert(0, (args.cv_filter + 2) + args.te_hidden)
