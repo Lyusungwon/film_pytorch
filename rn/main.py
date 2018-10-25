@@ -111,15 +111,16 @@ def object_pair(images, questions):
 	images1 = images.unsqueeze(1).expand(n, o, o, c + 2).contiguous()
 	images2 = images.unsqueeze(2).expand(n, o, o, c + 2).contiguous()
 	questions = questions.unsqueeze(1).unsqueeze(2).expand(n, o, o, hd)
-	pairs = torch.cat([images1, images2, questions], 3).view(n, o**2, -1)
+	# pairs = torch.cat([images1, images2, questions], 3).view(n, o**2, -1)
+	pairs = torch.cat([images1, images2, questions], 3)
 	return pairs
 
 
-# def lower_sum(relations):
-# 	n, h, w, l = relations.size()
-# 	mask = torch.ones([h, w]).tril().unsqueeze(0).unsqueeze(3).to(device)
-# 	relations = relations * mask
-# 	return relations.sum(2).sum(1)
+def lower_sum(relations):
+	n, h, w, l = relations.size()
+	mask = torch.ones([h, w]).tril().unsqueeze(0).unsqueeze(3).to(device)
+	relations = relations * mask
+	return relations.sum(2).sum(1)
 
 
 def train(epoch):
@@ -148,7 +149,8 @@ def train(epoch):
 		questions = text_encoder(question)
 		pairs = object_pair(objects, questions)
 		relations = g_theta(pairs)
-		relations_sum = relations.sum(1)
+		relations_sum = lower_sum(relations)
+		# relations_sum = relations.sum(1)
 		output = f_phi(relations_sum)
 		loss = F.cross_entropy(output, answer)
 		loss.backward()
@@ -207,7 +209,8 @@ def test(epoch):
 		questions = text_encoder(question)
 		pairs = object_pair(objects, questions)
 		relations = g_theta(pairs)
-		relations_sum = relations.sum(1)
+		relations_sum = lower_sum(relations)
+		# relations_sum = relations.sum(1)
 		output = f_phi(relations_sum)
 		loss = F.cross_entropy(output, answer)
 		test_loss += loss.item()
