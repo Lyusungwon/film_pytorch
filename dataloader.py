@@ -11,8 +11,7 @@ import re
 from collections import defaultdict
 import h5py
 import vqa_util
-import sort_of_clevr_generator2
-import sort_of_clevr_generator3
+import sort_of_clevr_generator
 from pathlib import Path
 home = str(Path.home())
 
@@ -180,90 +179,90 @@ class Clevr(Dataset):
 			image = self.transform(image)
 		return image, q, a
 
-
-class SortOfClevr(Dataset):
-	"""SortOfClevr  dataset."""
-	def __init__(self, root_dir, train = True, transform = None):
-		self.root_dir = root_dir
-		self.mode = 'train' if train else 'val'
-		self.transform = transform
-		self.data_dir = self.root_dir + '{}/data.hy'.format(self.mode)
-		self.load_data()
-
-	def load_data(self):
-		file = h5py.File(self.data_dir, 'r')
-		data = []
-		for key, val in file.items():
-			image = val['image'].value
-			image.astype(float)
-			image = torch.from_numpy(image.transpose(2,0,1)).to(torch.float)
-			question = np.where(val['question'].value)[0]
-			question[1] = question[1] - vqa_util.NUM_COLOR
-			question = torch.Tensor(question).to(torch.long)
-			answer = np.where(val['answer'].value)[0]
-			answer = torch.Tensor(answer).to(torch.long)
-			data.append((image, question, answer))
-		self.data_list = data
-		self.idx_to_question = vqa_util.question_type_dict
-		self.idx_to_color = vqa_util.color_dict
-		self.idx_to_answer = vqa_util.answer_dict
-		self.q_size = len(self.idx_to_question)
-		self.c_size = len(self.idx_to_color)
-		self.a_size = len(self.idx_to_answer)
-
-	def __len__(self):
-		return len(self.data_list)
-
-	def __getitem__(self, idx):
-		image, q, a = self.data_list[idx]
-		return image, q, a
-
-class SortOfClevr2(Dataset):
-	"""SortOfClevr2 dataset."""
-	def __init__(self, root_dir, train = True, transform = None):
-		self.root_dir = root_dir
-		self.mode = 'train' if train else 'val'
-		self.transform = transform
-		self.data_dir = self.root_dir + 'sort-of-clevr2-{}.pickle'.format(self.mode)
-		self.load_data()
-
-	def load_data(self):
-		with open(self.data_dir, 'rb') as f:
-			self.data = pickle.load(f)
-		self.idx_to_color = sort_of_clevr_generator2.color_dict
-		self.idx_to_question = sort_of_clevr_generator2.question_type_dict
-		self.idx_to_answer = sort_of_clevr_generator2.answer_dict
-		self.c_size = len(self.idx_to_color)
-		self.q_size = len(self.idx_to_question)
-		self.a_size = len(self.idx_to_answer)
-
-	def __len__(self):
-		return len(self.data * 20)
-
-	def __getitem__(self, idx):
-		image, rel, non_rel = self.data[idx//20]
-		# print(image)
-		# image = transforms.toTensor(image)
-		index = idx % 20
-		if index < 10:
-			q, a = non_rel
-			q = q[index]
-			a = a[index]
-			q = np.where(q)[0]
-			q[1] = q[2] - 8
-			q = q[:2]
-
-		else:
-			q, a = rel
-			q = q[index - 10]
-			a = a[index - 10]
-			q = np.where(q)[0]
-			q[1] = q[2] - 5
-			q = q[:2]
-		image = torch.from_numpy(image.transpose(2, 0, 1)).float() / 255
-
-		q = torch.from_numpy(q).long()
-		return image, q, a
+#
+# class SortOfClevr(Dataset):
+# 	"""SortOfClevr  dataset."""
+# 	def __init__(self, root_dir, train = True, transform = None):
+# 		self.root_dir = root_dir
+# 		self.mode = 'train' if train else 'val'
+# 		self.transform = transform
+# 		self.data_dir = self.root_dir + '{}/data.hy'.format(self.mode)
+# 		self.load_data()
+#
+# 	def load_data(self):
+# 		file = h5py.File(self.data_dir, 'r')
+# 		data = []
+# 		for key, val in file.items():
+# 			image = val['image'].value
+# 			image.astype(float)
+# 			image = torch.from_numpy(image.transpose(2,0,1)).to(torch.float)
+# 			question = np.where(val['question'].value)[0]
+# 			question[1] = question[1] - vqa_util.NUM_COLOR
+# 			question = torch.Tensor(question).to(torch.long)
+# 			answer = np.where(val['answer'].value)[0]
+# 			answer = torch.Tensor(answer).to(torch.long)
+# 			data.append((image, question, answer))
+# 		self.data_list = data
+# 		self.idx_to_question = vqa_util.question_type_dict
+# 		self.idx_to_color = vqa_util.color_dict
+# 		self.idx_to_answer = vqa_util.answer_dict
+# 		self.q_size = len(self.idx_to_question)
+# 		self.c_size = len(self.idx_to_color)
+# 		self.a_size = len(self.idx_to_answer)
+#
+# 	def __len__(self):
+# 		return len(self.data_list)
+#
+# 	def __getitem__(self, idx):
+# 		image, q, a = self.data_list[idx]
+# 		return image, q, a
+#
+# class SortOfClevr2(Dataset):
+# 	"""SortOfClevr2 dataset."""
+# 	def __init__(self, root_dir, train = True, transform = None):
+# 		self.root_dir = root_dir
+# 		self.mode = 'train' if train else 'val'
+# 		self.transform = transform
+# 		self.data_dir = self.root_dir + 'sort-of-clevr2-{}.pickle'.format(self.mode)
+# 		self.load_data()
+#
+# 	def load_data(self):
+# 		with open(self.data_dir, 'rb') as f:
+# 			self.data = pickle.load(f)
+# 		self.idx_to_color = sort_of_clevr_generator2.color_dict
+# 		self.idx_to_question = sort_of_clevr_generator2.question_type_dict
+# 		self.idx_to_answer = sort_of_clevr_generator2.answer_dict
+# 		self.c_size = len(self.idx_to_color)
+# 		self.q_size = len(self.idx_to_question)
+# 		self.a_size = len(self.idx_to_answer)
+#
+# 	def __len__(self):
+# 		return len(self.data * 20)
+#
+# 	def __getitem__(self, idx):
+# 		image, rel, non_rel = self.data[idx//20]
+# 		# print(image)
+# 		# image = transforms.toTensor(image)
+# 		index = idx % 20
+# 		if index < 10:
+# 			q, a = non_rel
+# 			q = q[index]
+# 			a = a[index]
+# 			q = np.where(q)[0]
+# 			q[1] = q[2] - 8
+# 			q = q[:2]
+#
+# 		else:
+# 			q, a = rel
+# 			q = q[index - 10]
+# 			a = a[index - 10]
+# 			q = np.where(q)[0]
+# 			q[1] = q[2] - 5
+# 			q = q[:2]
+# 		image = torch.from_numpy(image.transpose(2, 0, 1)).float() / 255
+#
+# 		q = torch.from_numpy(q).long()
+# 		return image, q, a
 
 class SortOfClevr3(Dataset):
 	"""SortOfClevr3 dataset."""
@@ -277,9 +276,9 @@ class SortOfClevr3(Dataset):
 	def load_data(self):
 		with open(self.data_dir, 'rb') as f:
 			self.data = pickle.load(f)
-		self.idx_to_color = sort_of_clevr_generator3.color_dict
-		self.idx_to_question = sort_of_clevr_generator3.question_type_dict
-		self.idx_to_answer = sort_of_clevr_generator3.answer_dict
+		self.idx_to_color = sort_of_clevr_generator.color_dict
+		self.idx_to_question = sort_of_clevr_generator.question_type_dict
+		self.idx_to_answer = sort_of_clevr_generator.answer_dict
 		self.c_size = len(self.idx_to_color)
 		self.q_size = len(self.idx_to_question)
 		self.a_size = len(self.idx_to_answer)

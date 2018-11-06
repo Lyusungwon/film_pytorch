@@ -20,6 +20,11 @@ def get_config():
     model_arg.add_argument('--cv-stride', type=int, default=2)
     model_arg.add_argument('--cv-layer', type=int, default=4)
     model_arg.add_argument('--cv-layernorm', action='store_false')
+    # new
+    model_arg.add_argument('--chaining-size', type=int, default=2)
+    model_arg.add_argument('--lstm-layer', type=int, default=1)
+    model_arg.add_argument('--lstm-hidden', type=int, default=16)
+
     # Text Encoder
     model_arg.add_argument('--te-embedding', type=int, default=1)
     model_arg.add_argument('--te-hidden', type=int, default=128)
@@ -35,6 +40,7 @@ def get_config():
     model_arg.add_argument('--fp-dropout', type=int, default=5)
     model_arg.add_argument('--fp-dropout-rate', type=float, default=0.2)
     model_arg.add_argument('--fp-layer', type=int, default=3)
+
 
     data_arg = parser.add_argument_group('Data')
     data_arg.add_argument('--data-directory', type=str, default = home + '/data/', metavar='N', help='directory of data')

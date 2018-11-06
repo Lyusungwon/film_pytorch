@@ -3,10 +3,9 @@ import torch.optim as optim
 from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
 from tensorboardX import SummaryWriter
 import model
-from utils.utils import *
+from utils import *
 from collections import defaultdict
 import cv2
-import sys
 from configuration import get_config
 import dataloader
 
@@ -18,34 +17,42 @@ train_loader = dataloader.train_loader(args.dataset, args.data_directory, args.b
 test_loader = dataloader.test_loader(args.dataset, args.data_directory, args.batch_size, args.data_config)
 
 cv_layout = [(args.cv_filter, args.cv_kernel, args.cv_stride) for i in range(args.cv_layer)]
-gt_layout = [args.gt_hidden for i in range(args.gt_layer)]
-if args.dataset == 'clevr':
-    gt_layout.insert(0, (args.cv_filter + 2) + args.te_hidden)
+if not args.model == 'new':
+    gt_layout = [args.gt_hidden for i in range(args.gt_layer)]
+    if args.dataset == 'clevr':
+        gt_layout.insert(0, (args.cv_filter + 2) + args.te_hidden)
+    else:
+        if args.model == 'baseline':
+            gt_layout.insert(0, (args.cv_filter + 2) + args.te_embedding * 2)
+        elif args.model == 'rn':
+            gt_layout.insert(0, (args.cv_filter + 2) * 2 + args.te_embedding * 2)
+        elif args.model == 'sarn':
+            gt_layout.insert(0, 2 * (args.cv_filter + 2 + args.te_embedding))
+            hp_layout = [args.cv_filter + 2 + args.te_embedding * 2] + [args.hp_hidden for i in range(args.hp_layer - 1)] + [1]
+    fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
 else:
-    if args.model == 'baseline':
-        gt_layout.insert(0, (args.cv_filter + 2) + args.te_embedding * 2)
-    elif args.model == 'rn':
-        gt_layout.insert(0, (args.cv_filter + 2) * 2 + args.te_embedding * 2)
-    elif args.model == 'sarn':
-        gt_layout.insert(0, 2 * (args.cv_filter + 2 + args.te_embedding))
-        hp_layout = [args.cv_filter + 2 + args.te_embedding * 2] + [args.hp_hidden for i in range(args.hp_layer - 1)] + [1]
-fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
+    fp_layout = [args.chaining_size * args.cv_filter] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
 
-conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
+if not args.model == 'new':
+    conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
+    g_theta = model.MLP(gt_layout).to(device)
+else:
+    conv = model.Film(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm, args.chaining_size, args.lstm_hidden, args.te_embedding * 2).to(device)
+if args.model == 'sarn':
+    h_psi = model.MLP(hp_layout).to(device)
+
 if args.dataset == 'clevr':
     text_encoder = model.Text_encoder(train_loader.dataset.q_size, args.te_embedding, args.te_hidden, args.te_layer).to(device)
 else:
     text_encoder = model.Text_embedding(train_loader.dataset.c_size, train_loader.dataset.q_size, args.te_embedding).to(device)
-if args.model == 'sarn':
-    h_psi = model.MLP(hp_layout).to(device)
-g_theta = model.MLP(gt_layout).to(device)
 f_phi = model.MLP(fp_layout).to(device)
 
 models = dict()
 models['text_encoder.pt'] = text_encoder
 models['conv.pt'] = conv
-models['g_theta.pt'] = g_theta
 models['f_phi.pt'] = f_phi
+if not args.model == 'new':
+    models['g_theta.pt'] = g_theta
 if args.model == 'sarn':
     models['h_psi.pt'] = h_psi
 
@@ -75,25 +82,29 @@ def epoch(epoch_idx, is_train):
         optimizer.zero_grad()
         image = image.to(device)
         answer = answer.to(device)
-        objects = conv(image * 2 - 1)
         if args.dataset == 'clevr':
             question = PackedSequence(question.data.to(device), question.batch_sizes)
         else:
             question = question.to(device)
             # answer = answer.squeeze(1)
         code = text_encoder(question)
-        if args.model == 'baseline':
-            pairs = baseline_encode(objects, code)
-        elif args.model == 'rn':
-            pairs = rn_encode(objects, code)
-        elif args.model == 'sarn':
-            coordinate_encoded, question_encoded = sarn_encode(objects, code)
-            logits = h_psi(question_encoded)
-            pairs = sarn_pair(coordinate_encoded, question_encoded, logits)
-        relations = g_theta(pairs)
-        if args.model == 'rn':
-            relations = lower_sum(relations)
-        output = f_phi(relations.sum(1))
+        if not args.model == 'new':
+            objects = conv(image * 2 - 1)
+            if args.model == 'baseline':
+                pairs = baseline_encode(objects, code)
+            elif args.model == 'rn':
+                pairs = rn_encode(objects, code)
+            elif args.model == 'sarn':
+                coordinate_encoded, question_encoded = sarn_encode(objects, code)
+                logits = h_psi(question_encoded)
+                pairs = sarn_pair(coordinate_encoded, question_encoded, logits)
+            relations = g_theta(pairs)
+            if args.model == 'rn':
+                relations = lower_sum(relations)
+            relations = relations.sum(1)
+        else:
+            relations = conv(image * 2 - 1, code)
+        output = f_phi(relations)
         loss = F.cross_entropy(output, answer)
         if is_train:
             loss.backward()
