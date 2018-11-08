@@ -31,13 +31,13 @@ if not args.model == 'new':
             hp_layout = [args.cv_filter + 2 + args.te_embedding * 2] + [args.hp_hidden for i in range(args.hp_layer - 1)] + [1]
     fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
 else:
-    fp_layout = [args.chaining_size * args.cv_filter] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
+    fp_layout = [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
 
 if not args.model == 'new':
     conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
     g_theta = model.MLP(gt_layout).to(device)
 else:
-    conv = model.Film(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm, args.chaining_size, args.lstm_hidden, args.te_embedding * 2).to(device)
+    conv = model.Film(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm, args.chaining_size, args.lstm_hidden, args.te_embedding * 2, args.fp_hidden).to(device)
 if args.model == 'sarn':
     h_psi = model.MLP(hp_layout).to(device)
 
@@ -184,7 +184,7 @@ if __name__ == '__main__':
     optimizer = optim.Adam([param for model in models.values() for param in list(model.parameters())], lr=args.lr)
     writer = SummaryWriter(args.log)
     for epoch_idx in range(args.start_epoch, args.start_epoch + args.epochs):
-        # epoch(epoch_idx, True)
+        epoch(epoch_idx, True)
         epoch(epoch_idx, False)
         for model_name, model in models.items():
             torch.save(model.state_dict(), args.log + model_name)

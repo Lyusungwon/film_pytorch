@@ -173,6 +173,7 @@ class Clevr(Dataset):
 		return len(self.qa_idx_data)
 
 	def __getitem__(self, idx):
+
 		img_dir, q, a = self.qa_idx_data[idx]
 		image = Image.open(self.img_dir + img_dir).convert('RGB')
 		if self.transform:

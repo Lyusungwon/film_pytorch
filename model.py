@@ -83,7 +83,7 @@ class Text_embedding(nn.Module):
 
 
 class Film(nn.Module):
-    def __init__(self, input_h, input_w, layer_config, channel_size, layer_norm, chaining_size, hidden_size, embedding_size):
+    def __init__(self, input_h, input_w, layer_config, channel_size, layer_norm, chaining_size, hidden_size, embedding_size, output_size):
         super(Film, self).__init__()
         self.input_h = input_h
         self.input_w = input_w
@@ -92,8 +92,12 @@ class Film(nn.Module):
         self.channel_size = channel_size
         self.layer_norm = layer_norm
         self.chaining_size = chaining_size
-        self.lstm = nn.LSTM(embedding_size, hidden_size)
+        self.hidden_size = hidden_size
+        self.embedding_size = embedding_size
+        self.output_size = output_size
         self.filter_size = layer_config[0][0]
+        self.lstm = nn.LSTM(embedding_size, hidden_size)
+        self.selector = nn.LSTM(self.filter_size + embedding_size, output_size)
         self.beta_l = nn.Linear(hidden_size, self.filter_size * self.layer_size)
         self.gamma_l = nn.Linear(hidden_size, self.filter_size * self.layer_size)
         prev_filter = channel_size
@@ -107,31 +111,32 @@ class Film(nn.Module):
             net.append(nn.ReLU(inplace=True))
             prev_filter = num_filter
         net.append(self.lstm)
+        net.append(self.selector)
         net.append(self.beta_l)
         net.append(self.gamma_l)
         self.net = net
         print(self.net)
 
     def forward(self, x, q):
-        q = q.unsqueeze(0).expand((self.chaining_size, -1, -1))
-        output, (hn, cn) = self.lstm(q)
-        chains = []
+        qs = q.unsqueeze(0).expand((self.chaining_size, -1, -1))
+        output, (hn, cn) = self.lstm(qs)
+        entities = torch.zeros(0, x.size()[0], self.filter_size + self.embedding_size).to(x.get_device())
         for n in range(self.chaining_size):
             x_ = x.clone()
             betas = self.beta_l(output[n])
             gammas = self.gamma_l(output[n])
             layer = 0
-            for module in self.net[:-3]:
+            for module in self.net[:-6]:
                 if isinstance(module, nn.ReLU):
                     beta = betas[:, layer*self.filter_size:(layer+1)*self.filter_size].unsqueeze(2).unsqueeze(3).expand_as(x_)
                     gamma = gammas[:, layer*self.filter_size:(layer+1)*self.filter_size].unsqueeze(2).unsqueeze(3).expand_as(x_)
                     x_ = x_ * beta + gamma
                     layer += 1
                 x_ = module(x_)
-            chains.append(x_.squeeze(3).squeeze(2))
-        relation = torch.cat(chains, 1)
-        return relation
-
+            x_ = torch.cat([x_.squeeze(3).squeeze(2), q], 1)
+            entities = torch.cat([entities, x_.unsqueeze(0)], 0)
+        output, (hn, cn) = self.selector(entities)
+        return hn[-1]
 #
 #
 # class FeatureWiseLinearTransformation(nn.Module):
