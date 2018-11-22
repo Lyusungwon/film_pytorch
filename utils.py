@@ -58,3 +58,9 @@ def sarn_pair(coordinate_encoded, question_encoded, logits):
     return pairs
 
 
+def sarn_select(coordinate_encoded, logits):
+    selection = F.softmax(logits.squeeze(2), dim=1)
+    selected = torch.bmm(selection.unsqueeze(1), coordinate_encoded)
+    return selected
+
+
