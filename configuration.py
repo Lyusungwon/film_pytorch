@@ -11,9 +11,6 @@ def get_config():
     model_arg = parser.add_argument_group('Model')
     model_arg.add_argument('--project', type=str, default='rn')
     model_arg.add_argument('--model', type=str, default='baseline')
-        # baseline:
-        # rn: base rn
-        #
     # Convolution
     model_arg.add_argument('--cv-filter', type=int, default=32)
     model_arg.add_argument('--cv-kernel', type=int, default=3)
@@ -23,7 +20,7 @@ def get_config():
     # new
     model_arg.add_argument('--chaining-size', type=int, default=2)
     model_arg.add_argument('--lstm-layer', type=int, default=1)
-    model_arg.add_argument('--lstm-hidden', type=int, default=16)
+    model_arg.add_argument('--lstm-hidden', type=int, default=32)
 
     # Text Encoder
     model_arg.add_argument('--te-embedding', type=int, default=1)
@@ -40,6 +37,10 @@ def get_config():
     model_arg.add_argument('--fp-dropout', type=int, default=5)
     model_arg.add_argument('--fp-dropout-rate', type=float, default=0.2)
     model_arg.add_argument('--fp-layer', type=int, default=3)
+    # att
+    model_arg.add_argument('--att-head', type=int, default=1)
+    model_arg.add_argument('--att-key', type=int, default=32)
+    model_arg.add_argument('--att-val', type=int, default=32)
 
 
     data_arg = parser.add_argument_group('Data')
