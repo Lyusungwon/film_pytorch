@@ -41,7 +41,14 @@ def get_config():
     model_arg.add_argument('--att-head', type=int, default=1)
     model_arg.add_argument('--att-key', type=int, default=32)
     model_arg.add_argument('--att-val', type=int, default=32)
-
+    # film
+    model_arg.add_argument('--film-lstm-hidden', type=int, default=16)
+    model_arg.add_argument('--film-filter', type=int, default=32)
+    model_arg.add_argument('--film-kernel', type=int, default=3)
+    model_arg.add_argument('--film-res-layer', type=int, default=5)
+    model_arg.add_argument('--film-last-filter', type=int, default=64)
+    model_arg.add_argument('--film-mlp-hidden', type=int, default=128)
+    model_arg.add_argument('--film-mlp-layer', type=int, default=2)
 
     data_arg = parser.add_argument_group('Data')
     data_arg.add_argument('--data-directory', type=str, default = home + '/data/', metavar='N', help='directory of data')
