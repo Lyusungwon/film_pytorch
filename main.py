@@ -1,95 +1,29 @@
+import os
 import time
 import torch.optim as optim
 from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
 from tensorboardX import SummaryWriter
-import model
+from build_model import build_model
 from utils import *
 from collections import defaultdict
 import cv2
 from configuration import get_config
-import numpy as np
 import dataloader
 
 args = get_config()
 device = args.device
-torch.manual_seed(args.seed)
 
 train_loader = dataloader.train_loader(args.dataset, args.data_directory, args.batch_size, args.data_config)
 test_loader = dataloader.test_loader(args.dataset, args.data_directory, args.batch_size, args.data_config)
+args.label_size = train_loader.dataset.a_size
+args.q_size = train_loader.dataset.q_size
+args.c_size = train_loader.dataset.c_size
 
-models = dict()
-cv_layout = [(args.cv_filter, args.cv_kernel, args.cv_stride) for i in range(args.cv_layer)]
-if args.model == 'baseline':
-    gt_layout = [(args.cv_filter + 2) + args.te_embedding * 2] + [args.gt_hidden for i in range(args.gt_layer)]
-    fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
-    conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
-    g_theta = model.MLP(gt_layout).to(device)
-    f_phi = model.MLP(fp_layout).to(device)
-    models['g_theta.pt'] = g_theta
-    models['f_phi.pt'] = f_phi
-
-elif args.model == 'rn':
-    gt_layout = [(args.cv_filter + 2) * 2 + args.te_embedding * 2] + [args.gt_hidden for i in range(args.gt_layer)]
-    fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
-    conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
-    g_theta = model.MLP(gt_layout).to(device)
-    f_phi = model.MLP(fp_layout).to(device)
-    models['g_theta.pt'] = g_theta
-    models['f_phi.pt'] = f_phi
-
-elif args.model == 'sarn':
-    gt_layout = [2 * (args.cv_filter + 2 + args.te_embedding)] + [args.gt_hidden for i in range(args.gt_layer)]
-    hp_layout = [args.cv_filter + 2 + args.te_embedding * 2] + [args.hp_hidden for i in range(args.hp_layer - 1)] + [1]
-    fp_layout = [args.gt_hidden] + [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
-    conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
-    g_theta = model.MLP(gt_layout).to(device)
-    h_psi = model.MLP(hp_layout).to(device)
-    f_phi = model.MLP(fp_layout).to(device)
-    models['g_theta.pt'] = g_theta
-    models['f_phi.pt'] = f_phi
-    models['h_psi.pt'] = h_psi
-
-elif args.model == 'sarn_att':
-    gt_layout = [2 * (args.cv_filter + 2 + args.te_embedding)] + [args.gt_hidden for i in range(args.gt_layer)]
-    hp_layout = [args.cv_filter + 2 + args.te_embedding * 2] + [args.hp_hidden for i in range(args.hp_layer - 1)] + [1]
-    fp_layout = [args.cv_filter + 2] + [args.fp_hidden for i in range(args.fp_layer - 2)] + [train_loader.dataset.a_size]
-    h_psi = model.MLP(hp_layout).to(device)
-    conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
-    g_theta = model.MLP(gt_layout).to(device)
-    h_psi = model.MLP(hp_layout).to(device)
-    attn = model.MultiHeadAttention(n_head=1, d_model=args.cv_filter+2, d_k=32, d_v=32).to(device)
-    f_phi = model.MLP(fp_layout).to(device)
-    models['g_theta.pt'] = g_theta
-    models['f_phi.pt'] = f_phi
-    models['h_psi.pt'] = h_psi
-    models['attn.pt'] = attn
-
-elif args.model == 'new':
-    fp_layout = [args.fp_hidden for i in range(args.fp_layer - 1)] + [train_loader.dataset.a_size]
-    conv = model.Filmm(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm, args.chaining_size, args.lstm_hidden, args.te_embedding * 2, args.fp_hidden).to(device)
-    f_phi = model.MLP(fp_layout).to(device)
-    models['f_phi.pt'] = f_phi
-
-elif args.model == 'film':
-    conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
-    input_h, input_w = args.input_h, args.input_w
-    for i in range(args.cv_layer):
-        input_h = int(np.ceil(input_h / 2))
-        input_w = int(np.ceil(input_w / 2))
-    film = model.Film(args.te_embedding * 2, args.film_lstm_hidden, args.film_filter, args.film_kernel, args.film_res_layer, args.film_last_filter, input_h, input_w, args.film_mlp_hidden, args.film_mlp_layer, train_loader.dataset.a_size).to(device)
-    models['film.pt'] = film
-
-if args.dataset == 'clevr':
-    text_encoder = model.Text_encoder(train_loader.dataset.q_size, args.te_embedding, args.te_hidden, args.te_layer).to(device)
-else:
-    text_encoder = model.Text_embedding(train_loader.dataset.c_size, train_loader.dataset.q_size, args.te_embedding).to(device)
-models['text_encoder.pt'] = text_encoder
-models['conv.pt'] = conv
-
+models = build_model(args)
 
 if args.load_model != '000000000000':
     for model_name, model in models.items():
-        model.load_state_dict(torch.load(args.log_directory + args.project + '/' + args.load_model + '/' + model_name))
+        model.load_state_dict(torch.load(os.path.join(args.log_directory + args.project, args.load_model, model_name)))
     args.time_stamp = args.load_model[:12]
     print('Model {} loaded.'.format(args.load_model))
 
@@ -119,42 +53,43 @@ def epoch(epoch_idx, is_train):
         else:
             question = question.to(device)
             # answer = answer.squeeze(1)
-        code = text_encoder(question)
+        code = models['text_encoder.pt'](question)
         if args.model == 'baseline':
-            objects = conv(image * 2 - 1)
+            objects = models['conv.pt'](image * 2 - 1)
             pairs = baseline_encode(objects, code)
-            relations = g_theta(pairs)
+            relations = models['g_theta.pt'](pairs)
             relations = relations.sum(1)
-            output = f_phi(relations)
+            output = models['f_phi.pt'](relations)
         elif args.model == 'rn':
-            objects = conv(image * 2 - 1)
+            objects = models['conv.pt'](image * 2 - 1)
             pairs = rn_encode(objects, code)
-            relations = g_theta(pairs)
+            relations = models['g_theta.pt'](pairs)
             relations = lower_sum(relations)
             relations = relations.sum(1)
-            output = f_phi(relations)
+            output = models['f_phi.pt'](relations)
         elif args.model == 'sarn':
-            objects = conv(image * 2 - 1)
+            objects = models['conv.pt'](image * 2 - 1)
             coordinate_encoded, question_encoded = sarn_encode(objects, code)
-            logits = h_psi(question_encoded)
+            logits = models['h_psi.pt'](question_encoded)
             pairs = sarn_pair(coordinate_encoded, question_encoded, logits)
-            relations = g_theta(pairs)
+            relations = models['g_theta.pt'](pairs)
             relations = relations.sum(1)
-            output = f_phi(relations)
+            output = models['f_phi.pt'](relations)
         elif args.model == 'sarn_att':
-            objects = conv(image * 2 - 1)
+            objects = models['conv.pt'](image * 2 - 1)
             coordinate_encoded, question_encoded = sarn_encode(objects, code)
-            logits = h_psi(question_encoded)
+            logits = models['h_psi.pt'](question_encoded)
             selected = sarn_select(coordinate_encoded, logits)
-            relations, att = attn(selected, coordinate_encoded, coordinate_encoded)
+            relations, att = models['attn.pt'](selected, coordinate_encoded, coordinate_encoded)
+            relations = models['g_theta.pt'](relations)
             relations = relations.sum(1)
-            output = f_phi(relations)
+            output = models['f_phi.pt'](relations)
         elif args.model == 'new':
-            relations = conv(image * 2 - 1, code)
-            output = f_phi(relations)
+            relations = models['conv.pt'](image * 2 - 1, code)
+            output = models['f_phi.pt'](relations)
         elif args.model == 'film':
-            objects = conv(image * 2 - 1)
-            output = film(objects, code)
+            objects = models['conv.pt'](image * 2 - 1)
+            output = models['film.pt'](objects, code)
         loss = F.cross_entropy(output, answer)
         if is_train:
             loss.backward()
@@ -162,7 +97,7 @@ def epoch(epoch_idx, is_train):
         epoch_loss += loss.item()
         pred = torch.max(output.data, 1)[1]
         correct = (pred == answer)
-        for i in range(loader.dataset.q_size):
+        for i in range(args.q_size):
             idx = question[:, 1] == i
             q_correct[i] += (correct * idx).sum().item()
             q_num[i] += idx.sum().item()
@@ -220,7 +155,7 @@ def epoch(epoch_idx, is_train):
         sum(q_correct.values()) / len(loader.dataset)))
     writer.add_scalar('{} loss'.format(mode), epoch_loss / len(loader.dataset), epoch_idx)
     q_acc = {}
-    for i in range(loader.dataset.q_size):
+    for i in range(args.q_size):
         q_acc['question {}'.format(str(i))] = q_correct[i] / q_num[i]
     q_corrects = list(q_correct.values())
     q_nums = list(q_num.values())

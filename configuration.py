@@ -38,12 +38,11 @@ def get_config():
     model_arg.add_argument('--fp-dropout-rate', type=float, default=0.2)
     model_arg.add_argument('--fp-layer', type=int, default=3)
     # att
-    model_arg.add_argument('--att-head', type=int, default=1)
-    model_arg.add_argument('--att-key', type=int, default=32)
-    model_arg.add_argument('--att-val', type=int, default=32)
+    model_arg.add_argument('--attn-head', type=int, default=1)
+    model_arg.add_argument('--attn-key', type=int, default=32)
+    model_arg.add_argument('--attn-val', type=int, default=32)
     # film
     model_arg.add_argument('--film-lstm-hidden', type=int, default=16)
-    model_arg.add_argument('--film-filter', type=int, default=32)
     model_arg.add_argument('--film-kernel', type=int, default=3)
     model_arg.add_argument('--film-res-layer', type=int, default=5)
     model_arg.add_argument('--film-last-filter', type=int, default=64)
