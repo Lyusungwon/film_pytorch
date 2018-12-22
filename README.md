@@ -30,7 +30,8 @@ python main.py --model sarn_att
 ```
 
 # Results
-Results of benchmarks with varying size of image and objects on modified Sort-Of-Clevr dataset. 
+Results of benchmarks with varying size of image and objects on modified Sort-Of-Clevr dataset.\\
+ 
 |   model  | image - object | 64 - 4 | 64 - 5 | 75 - 5 | 128 - 4 | 128 - 5 | 128 - 8 | 128 - 16 |
 |:--------:|:--------------:|:------:|:------:|:------:|:-------:|:-------:|:-------:|:--------:|
 | baseline |     non-rel    | 0.9941 | 0.9933 | 0.9961 |  0.9883 |  0.9978 |  0.9883 |     -    |
