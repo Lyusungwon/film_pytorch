@@ -17,11 +17,6 @@ def get_config():
     model_arg.add_argument('--cv-stride', type=int, default=2)
     model_arg.add_argument('--cv-layer', type=int, default=4)
     model_arg.add_argument('--cv-layernorm', action='store_false')
-    # new
-    model_arg.add_argument('--chaining-size', type=int, default=2)
-    model_arg.add_argument('--lstm-layer', type=int, default=1)
-    model_arg.add_argument('--lstm-hidden', type=int, default=32)
-
     # Text Encoder
     model_arg.add_argument('--te-embedding', type=int, default=1)
     model_arg.add_argument('--te-hidden', type=int, default=128)
@@ -51,7 +46,7 @@ def get_config():
 
     data_arg = parser.add_argument_group('Data')
     data_arg.add_argument('--data-directory', type=str, default = home + '/data/', metavar='N', help='directory of data')
-    data_arg.add_argument('--dataset', type=str, default='sortofclevr3')
+    data_arg.add_argument('--dataset', type=str, default='sortofclevr')
     data_arg.add_argument('--train-size', type=int, default=9800)
     data_arg.add_argument('--test-size', type=int, default=200)
     data_arg.add_argument('--image-size', type=int, default=75)
@@ -62,11 +57,9 @@ def get_config():
     data_arg.add_argument('--input-w', type=int, default=75)
 
     train_arg = parser.add_argument_group('Train')
-    train_arg.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default: 128)')
+    train_arg.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default: 64)')
     train_arg.add_argument('--epochs', type=int, default=500, metavar='N', help='number of epochs to train (default: 500)')
-    train_arg.add_argument('--lr', type=float, default=1e-4, metavar='N', help='learning rate (default: 2.5e-4)')
-    # train_arg.add_argument('--lr-term', type=int, default=500, metavar='N', help='term of increase learning rate (default: 500)')
-    # train_arg.add_argument('--lr-inc', type=float, default=2, metavar='N', help='increase of learning rate (default: 2)')
+    train_arg.add_argument('--lr', type=float, default=1e-4, metavar='N', help='learning rate (default: 1e-4)')
     train_arg.add_argument('--log-directory', type=str, default = home + '/experiment/', metavar='N', help='log directory')
     train_arg.add_argument('--device', type=int, default=0, metavar='N', help='number of cuda')
     train_arg.add_argument('--cpu-num', type=int, default=0, metavar='N', help='number of cpu')
@@ -76,7 +69,6 @@ def get_config():
     train_arg.add_argument('--memo', type=str, default='default', metavar='N', help='memo of the model')
     train_arg.add_argument('--load-model', type=str, default='000000000000', metavar='N', help='load previous model')
     train_arg.add_argument('--start-epoch', type=int, default=0, metavar='N', help='start-epoch number')
-    # test_arg = parser.add_argument_group('Test')
 
     args, unparsed = parser.parse_known_args()
 
@@ -84,7 +76,7 @@ def get_config():
         args.device = torch.device('cpu')
     else:
         torch.cuda.set_device(args.device)
-        # args.device = torch.device(args.device)
+        args.device = torch.device(args.device)
 
     if args.dataset == 'clevr':
         args.data_config = [args.input_h, args.input_w, args.cpu_num]

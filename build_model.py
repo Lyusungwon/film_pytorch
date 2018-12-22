@@ -57,13 +57,6 @@ def build_model(args):
         models['h_psi.pt'] = h_psi
         models['attn.pt'] = attn
 
-    elif args.model == 'new':
-        fp_layout = [args.fp_hidden for i in range(args.fp_layer - 1)] + [args.label_size]
-        conv = model.Filmm(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm,
-                           args.chaining_size, args.lstm_hidden, args.te_embedding * 2, args.fp_hidden).to(device)
-        f_phi = model.MLP(fp_layout).to(device)
-        models['f_phi.pt'] = f_phi
-
     elif args.model == 'film':
         conv = model.Conv(args.input_h, args.input_w, cv_layout, args.channel_size, args.cv_layernorm).to(device)
         input_h, input_w = args.input_h, args.input_w
