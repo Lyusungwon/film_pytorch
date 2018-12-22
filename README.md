@@ -31,10 +31,9 @@ python main.py --model sarn_att
 
 # Results
 Results of benchmarks with varying size of image and objects on modified Sort-Of-Clevr dataset. 
-$$
 |          |  image size |   64   |   64   |   75   |   128  |   128  |   128  |   128  |
 |  model   | object size |    4   |    5   |    5   |    4   |    5   |    8   |   16   |
-|:--------:|:-----------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|
+|----------|-------------|--------|--------|--------|--------|--------|--------|--------|
 | baseline |   non-rel   | 0.9941 | 0.9933 | 0.9961 | 0.9883 | 0.9978 | 0.9883 |    -   |
 | baseline |     rel     |  0.812 | 0.8163 | 0.8205 | 0.7227 | 0.8532 | 0.7227 |    -   |
 | baseline |    total    | 0.8803 | 0.8827 | 0.8864 | 0.8223 | 0.9074 | 0.8223 |    -   |
@@ -44,6 +43,5 @@ $$
 |   sarn   |   non-rel   |  0.997 | 0.9948 | 0.9986 | 0.9992 | 0.9988 | 0.9992 | 0.9819 |
 |   sarn   |     rel     | 0.8949 |  0.837 |   0.9  |  0.931 | 0.8669 |  0.931 | 0.8533 |
 |   sarn   |    total    | 0.9345 |  0.897 | 0.9347 | 0.9566 | 0.9163 | 0.9566 | 0.9016 |
-$$
 # Reference
 - MHDPA: https://github.com/jadore801120/attention-is-all-you-need-pytorch
