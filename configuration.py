@@ -34,11 +34,6 @@ def get_config():
     data_arg.add_argument('--dataset', type=str, default='clevr')
     data_arg.add_argument('--input-h', type=int, default=224)
     data_arg.add_argument('--input-w', type=int, default=224)
-    # data_arg.add_argument('--train-size', type=int, default=9800)
-    # data_arg.add_argument('--test-size', type=int, default=200)
-    # data_arg.add_argument('--image-size', type=int, default=75)
-    # data_arg.add_argument('--size', type=int, default=5)
-    # data_arg.add_argument('--closest', type=int, default=3)
 
     train_arg = parser.add_argument_group('Train')
     train_arg.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default: 64)')
@@ -67,7 +62,7 @@ def get_config():
 
     args.data_config = [args.input_h, args.input_w, args.cpu_num]
 
-    config_list = [args.project, args.model, args.dataset, args.epochs, args.batch_size, args.lr, args.device] + \
+    config_list = [args.project, args.model, args.dataset, args.epochs, args.batch_size, args.lr, args.device, args.multi_gpu, args.gpu_num] + \
                   args.data_config + \
                   ['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
                    'te', args.te_embedding, args.te_hidden, args.te_layer,

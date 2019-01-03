@@ -1,7 +1,5 @@
-import torch
 from torch import nn
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-import numpy as np
+from torch.nn.utils.rnn import pack_padded_sequence
 from utils import positional_encode
 
 
@@ -9,25 +7,13 @@ class Text_encoder(nn.Module):
     def __init__(self, vocab, embedding, hidden, num_layer=1, dropout=0):
         super(Text_encoder, self).__init__()
         self.embedding = nn.Embedding(vocab, embedding, padding_idx=0)
-        self.gru = nn.GRU(embedding, hidden, num_layers=num_layer, bidirectional=False, batch_first=True, dropout=dropout)
+        self.gru = nn.GRU(embedding, hidden, num_layers=num_layer, bidirectional=False, dropout=dropout)
 
     def forward(self, x):
         embedded = self.embedding(x[0])
         packed_embedded = pack_padded_sequence(embedded, x[1])
         output, h_n = self.gru(packed_embedded)
         return h_n.squeeze(0)
-
-# class Text_embedding(nn.Module):
-#     def __init__(self, color_size, question_size, embedding_size):
-#         super(Text_embedding, self).__init__()
-#         self.color_embedding = nn.Embedding(color_size, embedding_size, padding_idx=None)
-#         self.question_embedding = nn.Embedding(question_size, embedding_size, padding_idx=None)
-#
-#     def forward(self, x):
-#         c_embedded = self.color_embedding(x[:, 0])
-#         q_embedded = self.question_embedding(x[:, 1])
-#         text_embedded = torch.cat([c_embedded, q_embedded], 1)
-#         return text_embedded
 
 
 class Conv(nn.Module):
