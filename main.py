@@ -39,16 +39,18 @@ def epoch(epoch_idx, is_train):
     # q_num = defaultdict(lambda: 0)
     model.train() if is_train else model.eval()
     loader = train_loader if is_train else test_loader
-    for batch_idx, (image, question, answer) in enumerate(loader):
+    for batch_idx, (image, question_set, answer) in enumerate(loader):
         batch_size = image.size()[0]
         optimizer.zero_grad()
+        # if args.multi_gpu:
+        #     image = image.transpose(0, 1)
+        #     answer = answer.squeeze(0)
+        #     question = (question[0].to(device), question[1].squeeze(0))
         image = image.to(device)
         answer = answer.to(device)
-        question = (pad_sequence(question[0]).to(device), question[1].to(device))
-        # code = models['text_encoder.pt'](question)
-        # objects = models['conv.pt'](image * 2 - 1)
-        # output = models['film.pt'](objects, code)
-        output = model(question, image * 2 - 1)
+        question = question_set[0].to(device)
+        question_length = question_set[1].to(device)
+        output = model(question, question_length, image * 2 - 1)
         loss = F.cross_entropy(output, answer)
         if is_train:
             loss.backward()
