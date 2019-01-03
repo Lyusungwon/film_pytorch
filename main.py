@@ -4,6 +4,7 @@ import torch.nn as nn
 from tensorboardX import SummaryWriter
 from utils import *
 from collections import defaultdict
+from torch.nn.utils.rnn import pad_sequence
 from configuration import get_config
 from model import Film
 import dataloader
@@ -43,7 +44,7 @@ def epoch(epoch_idx, is_train):
         optimizer.zero_grad()
         image = image.to(device)
         answer = answer.to(device)
-        question = (question[0].to(device), question[1].to(device))
+        question = (pad_sequence(question[0]).to(device), question[1].to(device))
         # code = models['text_encoder.pt'](question)
         # objects = models['conv.pt'](image * 2 - 1)
         # output = models['film.pt'](objects, code)

@@ -21,9 +21,10 @@ def collate_text(list_inputs):
         questions.append(q)
         q_length.append(len(q))
         answers = torch.cat([answers, a], 0)
-    padded_questions = pad_sequence(questions)
+    # padded_questions = pad_sequence(questions)
     q_length = torch.Tensor(q_length).to(torch.long)
-    return images, (padded_questions, q_length), answers
+    # return images, (padded_questions, q_length), answers
+    return images, (questions, q_length), answers
 
 
 def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_config=[224, 224, 0]):
