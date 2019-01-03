@@ -42,13 +42,9 @@ def epoch(epoch_idx, is_train):
     for batch_idx, (image, question_set, answer) in enumerate(loader):
         batch_size = image.size()[0]
         optimizer.zero_grad()
-        # if args.multi_gpu:
-        #     image = image.transpose(0, 1)
-        #     answer = answer.squeeze(0)
-        #     question = (question[0].to(device), question[1].squeeze(0))
         image = image.to(device)
         answer = answer.to(device)
-        question = question_set[0].to(device)
+        question = question_set[0].transpose(0, 1).to(device)
         question_length = question_set[1].to(device)
         output = model(question, question_length, image * 2 - 1)
         loss = F.cross_entropy(output, answer)
@@ -58,7 +54,7 @@ def epoch(epoch_idx, is_train):
         epoch_loss += loss.item()
         pred = torch.max(output.data, 1)[1]
         correct = (pred == answer)
-        total_correct += correct.sum()
+        total_correct += correct.sum().item()
         # for i in range(args.q_size):
         #     idx = question[:, 1] == i
         #     q_correct[i] += (correct * idx).sum().item()
@@ -96,9 +92,9 @@ def epoch(epoch_idx, is_train):
         epoch_idx,
         epoch_loss / len(loader.dataset),
         time.time() - epoch_start_time,
-        total_correct.sum() / len(loader.dataset)))
+        total_correct / len(loader.dataset)))
     writer.add_scalar('{} loss'.format(mode), epoch_loss / len(loader.dataset), epoch_idx)
-    writer.add_scalar('{} total accuracy'.format(mode), total_correct.sum() / len(loader.dataset), epoch_idx)
+    writer.add_scalar('{} total accuracy'.format(mode), total_correct / len(loader.dataset), epoch_idx)
     # q_acc = {}
     # for i in range(args.q_size):
     #     q_acc['question {}'.format(str(i))] = q_correct[i] / q_num[i]
