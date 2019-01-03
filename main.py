@@ -45,17 +45,19 @@ def epoch(epoch_idx, is_train):
         optimizer.zero_grad()
         image = image.to(device)
         answer = answer.to(device)
-        question = question_set[0].transpose(0, 1).to(device)
+        question = question_set[0].to(device).transpose(0, 1)
         question_length = question_set[1].to(device)
         output = model(question, question_length, image * 2 - 1)
         loss = F.cross_entropy(output, answer)
         if is_train:
             loss.backward()
             optimizer.step()
-        epoch_loss += loss.item()
+        batch_loss = loss.item()
+        epoch_loss += batch_loss
         pred = torch.max(output.data, 1)[1]
         correct = (pred == answer)
-        total_correct += correct.sum().item()
+        batch_correct = correct.sum().item()
+        total_correct += batch_correct
         # for i in range(args.q_size):
         #     idx = question[:, 1] == i
         #     q_correct[i] += (correct * idx).sum().item()
@@ -66,12 +68,12 @@ def epoch(epoch_idx, is_train):
                     epoch_idx,
                     batch_idx * batch_size, len(loader.dataset),
                     100. * batch_idx / len(loader),
-                    loss.item() / batch_size,
+                    batch_loss / batch_size,
                     time.time() - start_time,
-                    correct.sum().item() / batch_size))
+                    batch_correct / batch_size))
                 idx = epoch_idx * len(loader) // args.log_interval + batch_idx // args.log_interval
-                writer.add_scalar('Batch loss', loss.item() / batch_size, idx)
-                writer.add_scalar('Batch accuracy', correct.sum().item() / batch_size, idx)
+                writer.add_scalar('Batch loss', batch_loss / batch_size, idx)
+                writer.add_scalar('Batch accuracy', batch_correct / batch_size, idx)
                 writer.add_scalar('Batch time', time.time() - start_time, idx)
                 start_time = time.time()
         # else:
@@ -115,4 +117,5 @@ if __name__ == '__main__':
         epoch(epoch_idx, False)
         torch.save(model.state_dict(), os.path.join(args.log, 'film.pt'))
         print('Model saved in ', os.path.join(args.log, 'film.pt'))
+        break
     writer.close()
