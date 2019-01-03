@@ -10,7 +10,7 @@ def get_config():
     parser = argparse.ArgumentParser(description='parser')
 
     model_arg = parser.add_argument_group('Model')
-    model_arg.add_argument('--project', type=str, default='rn')
+    model_arg.add_argument('--project', type=str, default='film')
     model_arg.add_argument('--model', type=str, default='film')
     # Convolution
     model_arg.add_argument('--cv-filter', type=int, default=128)
@@ -44,9 +44,12 @@ def get_config():
     train_arg.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default: 64)')
     train_arg.add_argument('--epochs', type=int, default=500, metavar='N', help='number of epochs to train (default: 500)')
     train_arg.add_argument('--lr', type=float, default=3e-4, metavar='N', help='learning rate (default: 1e-4)')
+    train_arg.add_argument('--weight-decay', type=float, default=1e-5)
     train_arg.add_argument('--log-directory', type=str, default=os.path.join(home, 'experiment'), metavar='N', help='log directory')
     train_arg.add_argument('--device', type=int, default=0, metavar='N', help='gpu number')
     train_arg.add_argument('--cpu-num', type=int, default=0, metavar='N', help='number of cpu')
+    model_arg.add_argument('--multi-gpu', action='store_true')
+    train_arg.add_argument('--gpu-num', type=int, default=4, metavar='N', help='number of cpu')
     train_arg.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
     train_arg.add_argument('--log-interval', type=int, default=10, metavar='N', help='how many batches to wait before logging training status')
     train_arg.add_argument('--time-stamp', type=str, default=datetime.datetime.now().strftime("%y%m%d%H%M%S"), metavar='N', help='time of the run(no modify)')

@@ -21,7 +21,8 @@ args.q_size = train_loader.dataset.q_size
 # args.c_size = train_loader.dataset.c_size
 
 model = Film(args).to(device)
-
+if args.multigpu:
+    model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
 
 if args.load_model:
     model.load_state_dict(torch.load(os.path.join(args.log_directory + args.project, args.load_model, model_name)))
@@ -109,7 +110,7 @@ def epoch(epoch_idx, is_train):
 
 
 if __name__ == '__main__':
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     writer = SummaryWriter(args.log)
     for epoch_idx in range(args.start_epoch, args.start_epoch + args.epochs):
         epoch(epoch_idx, True)
