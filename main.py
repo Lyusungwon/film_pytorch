@@ -1,11 +1,9 @@
 import os
-import time
 import torch.optim as optim
-from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence, pack_padded_sequence
+import torch.nn as nn
 from tensorboardX import SummaryWriter
 from utils import *
 from collections import defaultdict
-import cv2
 from configuration import get_config
 from model import Film
 import dataloader
@@ -21,7 +19,7 @@ args.q_size = train_loader.dataset.q_size
 # args.c_size = train_loader.dataset.c_size
 
 model = Film(args).to(device)
-if args.multigpu:
+if args.multi_gpu:
     model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
 
 if args.load_model:

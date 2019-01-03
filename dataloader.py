@@ -60,6 +60,7 @@ class Clevr(Dataset):
             return False
 
     def load_data(self):
+        print("Start loading {}".format(self.data_file))
         with open(self.data_file, 'rb') as file:
             self.data = pickle.load(file)
         with open(self.dict_file, 'rb') as file:
