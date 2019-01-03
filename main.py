@@ -19,9 +19,10 @@ args.a_size = train_loader.dataset.a_size
 args.q_size = train_loader.dataset.q_size
 # args.c_size = train_loader.dataset.c_size
 
-model = Film(args).to(device)
+model = Film(args)
 if args.multi_gpu:
     model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
+model = model.to(device)
 
 if args.load_model:
     model.load_state_dict(torch.load(os.path.join(args.log_directory + args.project, args.load_model, model_name)))
