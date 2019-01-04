@@ -8,15 +8,12 @@ class Text_encoder(nn.Module):
         super(Text_encoder, self).__init__()
         self.embedding = nn.Embedding(vocab, embedding, padding_idx=0)
         self.gru = nn.GRU(embedding, hidden, num_layers=num_layer, bidirectional=False, dropout=dropout)
+        self.gru.flatten_parameters()
 
     def forward(self, question, question_length):
         embedded = self.embedding(question)
         packed_embedded = pack_padded_sequence(embedded, question_length, batch_first=True)
-        # print(packed_embedded.data.size())
-        # self.gru.flatten_parameters()
-        output, h_n = self.gru(packed_embedded)
-        # print(output.data.size())
-        # print(h_n.size())
+        _, h_n = self.gru(packed_embedded)
         return h_n.squeeze(0)
 
 

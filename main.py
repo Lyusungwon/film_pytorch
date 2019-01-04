@@ -3,8 +3,6 @@ import torch.optim as optim
 import torch.nn as nn
 from tensorboardX import SummaryWriter
 from utils import *
-from collections import defaultdict
-from torch.nn.utils.rnn import pad_sequence
 from configuration import get_config
 from model import Film
 import dataloader
@@ -43,10 +41,10 @@ def epoch(epoch_idx, is_train):
         batch_size = image.size()[0]
         optimizer.zero_grad()
         image = image.to(device)
-        answer = answer.to(device)
         question = question_set[0].to(device)
         question_length = question_set[1].to(device)
-        output = model(question, question_length, image * 2 - 1)
+        answer = answer.to(device)
+        output = model(image * 2 - 1, question, question_length)
         loss = F.cross_entropy(output, answer)
         if is_train:
             loss.backward()

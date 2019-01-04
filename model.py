@@ -12,9 +12,9 @@ class Film(nn.Module):
         self.res_blocks = nn.ModuleList([ResBlock(args.cv_filter, args.cv_kernel) for _ in range(args.res_layer)])
         self.classifier = Classifier(args.cv_filter, args.cf_filter, args.fc_hidden, args.a_size, args.fc_layer)
 
-    def forward(self, question, question_length, image):
-        code = self.text_encoder(question, question_length)
+    def forward(self, image, question, question_length):
         x = self.visual_encoder(image)
+        code = self.text_encoder(question, question_length)
         betagamma = self.fc(code).view(-1, self.layers, 2, self.filters)
         for n, block in enumerate(self.res_blocks):
             x = block(x, betagamma[:, n])
