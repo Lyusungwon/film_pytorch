@@ -34,7 +34,7 @@ def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_co
         Clevr(os.path.join(data_directory, data), train=is_train,
         transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
         batch_size=batch_size, shuffle=True,
-        num_workers=cpu_num, pin_memory=True,
+        num_workers=30 if is_train else 10, pin_memory=True,
         collate_fn=collate_text)
     return dataloader
 
