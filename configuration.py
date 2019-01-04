@@ -14,7 +14,7 @@ def get_config():
     model_arg.add_argument('--model', type=str, default='film')
     # Convolution
     model_arg.add_argument('--cv-filter', type=int, default=128)
-    model_arg.add_argument('--cv-kernel', type=int, default=3)
+    model_arg.add_argument('--cv-kernel', type=int, default=4)
     model_arg.add_argument('--cv-stride', type=int, default=2)
     model_arg.add_argument('--cv-layer', type=int, default=4)
     model_arg.add_argument('--cv-batchnorm', action='store_false')
@@ -23,6 +23,7 @@ def get_config():
     model_arg.add_argument('--te-hidden', type=int, default=4096)
     model_arg.add_argument('--te-layer', type=int, default=1)
     # film
+    model_arg.add_argument('--res-kernel', type=int, default=3)
     model_arg.add_argument('--res-layer', type=int, default=4)
     # classifier
     model_arg.add_argument('--cf-filter', type=int, default=512)
@@ -37,8 +38,8 @@ def get_config():
 
     train_arg = parser.add_argument_group('Train')
     train_arg.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default: 64)')
-    train_arg.add_argument('--epochs', type=int, default=500, metavar='N', help='number of epochs to train (default: 500)')
-    train_arg.add_argument('--lr', type=float, default=3e-4, metavar='N', help='learning rate (default: 1e-4)')
+    train_arg.add_argument('--epochs', type=int, default=100, metavar='N', help='number of epochs to train (default: 100)')
+    train_arg.add_argument('--lr', type=float, default=3e-4, metavar='N', help='learning rate (default: 3e-4)')
     train_arg.add_argument('--weight-decay', type=float, default=1e-5)
     train_arg.add_argument('--log-directory', type=str, default=os.path.join(home, 'experiment'), metavar='N', help='log directory')
     train_arg.add_argument('--device', type=int, default=0, metavar='N', help='gpu number')
@@ -66,7 +67,7 @@ def get_config():
                   args.data_config + \
                   ['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
                    'te', args.te_embedding, args.te_hidden, args.te_layer,
-                   'res', args.res_layer,
+                   'res', args.res_kernel, args.res_layer,
                    'cf', args.cf_filter, args.fc_hidden, args.fc_layer,
                    args.memo]
 
