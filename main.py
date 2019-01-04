@@ -117,5 +117,4 @@ if __name__ == '__main__':
         epoch(epoch_idx, False)
         torch.save(model.state_dict(), os.path.join(args.log, 'film.pt'))
         print('Model saved in ', os.path.join(args.log, 'film.pt'))
-        break
     writer.close()
