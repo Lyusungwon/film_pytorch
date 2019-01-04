@@ -28,14 +28,14 @@ def collate_text(list_inputs):
 
 
 def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_config=[224, 224, 0]):
-    if data == 'clevr':
-        input_h, input_w, cpu_num = data_config
-        dataloader = DataLoader(
-            Clevr(os.path.join(data_directory, data), train=is_train,
-            transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
-            batch_size=batch_size, shuffle=True,
-            num_workers=cpu_num, pin_memory=True,
-            collate_fn=collate_text)
+    # if data == 'clevr':
+    input_h, input_w, cpu_num = data_config
+    dataloader = DataLoader(
+        Clevr(os.path.join(data_directory, data), train=is_train,
+        transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
+        batch_size=batch_size, shuffle=True,
+        num_workers=cpu_num, pin_memory=True,
+        collate_fn=collate_text)
     return dataloader
 
 
