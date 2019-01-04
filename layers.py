@@ -11,7 +11,7 @@ class Text_encoder(nn.Module):
 
     def forward(self, question, question_length):
         embedded = self.embedding(question)
-        packed_embedded = pack_padded_sequence(embedded, question_length)
+        packed_embedded = pack_padded_sequence(embedded, question_length, batch_first=True)
         # print(packed_embedded.data.size())
         # self.gru.flatten_parameters()
         output, h_n = self.gru(packed_embedded)

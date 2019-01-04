@@ -17,7 +17,6 @@ train_loader = dataloader.load_dataloader(args.dataset, args.data_directory, Tru
 test_loader = dataloader.load_dataloader(args.dataset, args.data_directory, False, args.batch_size, args.data_config)
 args.a_size = train_loader.dataset.a_size
 args.q_size = train_loader.dataset.q_size
-# args.c_size = train_loader.dataset.c_size
 
 model = Film(args)
 if args.multi_gpu:
@@ -45,7 +44,7 @@ def epoch(epoch_idx, is_train):
         optimizer.zero_grad()
         image = image.to(device)
         answer = answer.to(device)
-        question = question_set[0].to(device).transpose(0, 1)
+        question = question_set[0].to(device)
         question_length = question_set[1].to(device)
         output = model(question, question_length, image * 2 - 1)
         loss = F.cross_entropy(output, answer)
