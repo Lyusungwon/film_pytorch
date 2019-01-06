@@ -22,7 +22,7 @@ if args.multi_gpu:
 model = model.to(device)
 
 if args.load_model:
-    model.load_state_dict(torch.load(os.path.join(args.log_directory + args.project, args.load_model, 'film.pt')))
+    model.load_state_dict(torch.load(os.path.join(args.log_directory, args.project, args.load_model, 'film.pt')))
     args.time_stamp = args.load_model[:12]
     print('Model {} loaded.'.format(args.load_model))
 
