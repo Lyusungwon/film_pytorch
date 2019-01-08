@@ -26,6 +26,7 @@ question_type_dict = {'exist': 10,
 
 def make_data(data_dir):
     print("Start making data pickle")
+    query = 'type' if 'sample' in data_dir else 'function'
     q_corpus = set()
     a_corpus = set()
     modes = ['train', 'val']
@@ -42,7 +43,7 @@ def make_data(data_dir):
             q_corpus.update(q_words)
             a_text = str(q_obj['answer']).lower().strip()
             a_corpus.add(a_text)
-            q_type = question_type_dict[q_obj['program'][-1]['type']]
+            q_type = question_type_dict[q_obj['program'][-1][query]]
             qa_list[mode].append((img_f, q_words, a_text, q_type))
     word_to_idx = {"<pad>": 0, "<eos>": 1}
     idx_to_word = {0: "<pad>", 1: "<eos>"}
@@ -78,5 +79,5 @@ def make_data(data_dir):
 
 
 if __name__ =='__main__':
-    data_directory = os.path.join(home, 'data/sample')
+    data_directory = os.path.join(home, 'data/clevr')
     make_data(data_directory)
