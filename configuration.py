@@ -13,12 +13,14 @@ def get_config():
     model_arg.add_argument('--project', type=str, default='film')
     model_arg.add_argument('--model', type=str, default='film')
     # Convolution
+    model_arg.add_argument('--cv-pretrained', action='store_true')
     model_arg.add_argument('--cv-filter', type=int, default=128)
     model_arg.add_argument('--cv-kernel', type=int, default=4)
     model_arg.add_argument('--cv-stride', type=int, default=2)
     model_arg.add_argument('--cv-layer', type=int, default=4)
     model_arg.add_argument('--cv-batchnorm', action='store_false')
     # Text Encoder
+    model_arg.add_argument('--te-pretrained', action='store_true')
     model_arg.add_argument('--te-embedding', type=int, default=200)
     model_arg.add_argument('--te-hidden', type=int, default=4096)
     model_arg.add_argument('--te-layer', type=int, default=1)
@@ -51,7 +53,6 @@ def get_config():
     train_arg.add_argument('--time-stamp', type=str, default=datetime.datetime.now().strftime("%y%m%d%H%M%S"), metavar='N', help='time of the run(no modify)')
     train_arg.add_argument('--memo', type=str, default='default', metavar='N', help='memo of the model')
     train_arg.add_argument('--load-model', type=str, default=None, metavar='N', help='load previous model')
-    train_arg.add_argument('--start-epoch', type=int, default=0, metavar='N', help='start-epoch number')
 
     args, unparsed = parser.parse_known_args()
 
@@ -65,14 +66,19 @@ def get_config():
 
     config_list = [args.project, args.model, args.dataset, args.epochs, args.batch_size, args.lr, args.device, args.multi_gpu, args.gpu_num] + \
                   args.data_config + \
-                  ['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
-                   'te', args.te_embedding, args.te_hidden, args.te_layer,
+                  ['cv', args.cv_pretrained, args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
+                   'te', args.te_pretrained, args.te_embedding, args.te_hidden, args.te_layer,
                    'res', args.res_kernel, args.res_layer,
                    'cf', args.cf_filter, args.fc_hidden, args.fc_layer,
                    args.memo]
 
     args.config = '_'.join(map(str, config_list))
-    args.log = os.path.join(args.log_directory, args.project, args.time_stamp + args.config)
+    if args.load_model:
+        args.log = os.path.join(args.log_directory, args.project, args.load_model)
+        args.time_stamp = args.load_model[:12]
+    else:
+        args.log = os.path.join(args.log_directory, args.project, args.time_stamp + args.config)
+
     print("Config:", args.config)
 
     return args

@@ -1,13 +1,17 @@
+import torch
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence
 from utils import positional_encode
 
 
-class Text_encoder(nn.Module):
-    def __init__(self, vocab, embedding, hidden, num_layer=1, dropout=0):
-        super(Text_encoder, self).__init__()
+class TextEncoder(nn.Module):
+    def __init__(self, vocab, embedding, hidden, num_layer=1, pretrained_weight=None):
+        super(TextEncoder, self).__init__()
         self.embedding = nn.Embedding(vocab, embedding, padding_idx=0)
-        self.gru = nn.GRU(embedding, hidden, num_layers=num_layer, bidirectional=False, dropout=dropout)
+        if pretrained_weight is not None:
+            self.embedding.weight.data.copy_(pretrained_weight)
+            # self.embedding.weight.require_grad = False
+        self.gru = nn.GRU(embedding, hidden, num_layers=num_layer, bidirectional=False)
         self.gru.flatten_parameters()
 
     def forward(self, question, question_length):

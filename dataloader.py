@@ -16,15 +16,17 @@ def collate_text(list_inputs):
     questions = []
     q_length = []
     answers = torch.Tensor().to(torch.long)
-    for i, q, a in list_inputs:
+    question_types = torch.Tensor().to(torch.long)
+    for i, q, a, q_type in list_inputs:
         images = torch.cat([images, i.unsqueeze(0)], 0)
         questions.append(q)
         q_length.append(len(q))
         answers = torch.cat([answers, a], 0)
+        question_types = torch.cat([question_types, q_type], 0)
     padded_questions = pad_sequence(questions, batch_first=True)
 
     q_length = torch.Tensor(q_length).to(torch.long)
-    return images, (padded_questions, q_length), answers
+    return images, (padded_questions, q_length), answers, question_types
 
 
 def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_config=[224, 224, 0]):
@@ -70,24 +72,26 @@ class Clevr(Dataset):
         self.idx_to_word = self.dict['question']['idx_to_word']
         self.answer_word_to_idx = self.dict['answer']['word_to_idx']
         self.answer_idx_to_word = self.dict['answer']['idx_to_word']
+        self.question_type_dict = self.dict['question_type']
         self.q_size = len(self.word_to_idx)
         self.a_size = len(self.answer_word_to_idx)
+        self.qt_size = len(self.question_type_dict)
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        img_file, q, a = self.data[idx]
+        img_file, q, a, q_t = self.data[idx]
         image = Image.open(os.path.join(self.img_dir, img_file)).convert('RGB')
         if self.transform:
             image = self.transform(image)
-        return image, q, a
+        return image, q, a, q_t
 
 if __name__ =='__main__':
-    dataloader = load_dataloader('clevr', os.path.join(home, 'data'), True, 2)
-    for img, q, a in dataloader:
+    dataloader = load_dataloader('sample', os.path.join(home, 'data'), True, 2)
+    for img, q, a, q_t in dataloader:
         print(img.size())
         print(q[0].size())
         print(q[1])
-        print(a)
+        print(q_t.size())
         break
