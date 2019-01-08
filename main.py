@@ -34,10 +34,8 @@ def epoch(epoch_idx, is_train):
     mode = 'Train' if is_train else 'Test'
     epoch_loss = 0
     total_correct = 0
-
     q_correct = defaultdict(lambda: 0)
     q_num = defaultdict(lambda: 0)
-
     model.train() if is_train else model.eval()
     loader = train_loader if is_train else test_loader
     for batch_idx, (image, question_set, answer, question_type) in enumerate(loader):
@@ -57,10 +55,6 @@ def epoch(epoch_idx, is_train):
         epoch_loss += batch_loss
         pred = torch.max(output.data, 1)[1]
         correct = (pred == answer)
-        for i in range(args.q_size):
-            idx = question[:, 1] == i
-            q_correct[i] += (correct * idx).sum().item()
-            q_num[i] += idx.sum().item()
         batch_correct = correct.sum().item()
         total_correct += batch_correct
         for i in range(args.qt_size):

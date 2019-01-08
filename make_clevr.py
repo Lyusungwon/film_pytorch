@@ -9,19 +9,19 @@ from pathlib import Path
 home = str(Path.home())
 
 question_type_dict = {'exist': 10,
-                 'count': 20,
-                 'equal_integer': 30,
-                 'less_than': 31,
-                 'greater_than': 32,
-                 'query_size': 40,
-                 'query_color': 41,
-                 'query_material': 42,
-                 'query_shape': 43,
-                 'equal_size': 50,
-                 'equal_color': 51,
-                 'equal_material': 52,
-                 'equal_shape': 53
-                 }
+                    'count': 20,
+                    'equal_integer': 30,
+                    'less_than': 31,
+                    'greater_than': 32,
+                    'query_size': 40,
+                    'query_color': 41,
+                    'query_material': 42,
+                    'query_shape': 43,
+                    'equal_size': 50,
+                    'equal_color': 51,
+                    'equal_material': 52,
+                    'equal_shape': 53
+                    }
 
 
 def make_data(data_dir):
