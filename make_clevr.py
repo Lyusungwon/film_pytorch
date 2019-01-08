@@ -79,5 +79,5 @@ def make_data(data_dir):
 
 
 if __name__ =='__main__':
-    data_directory = os.path.join(home, 'data/clevr')
+    data_directory = os.path.join(home, 'data/sample')
     make_data(data_directory)
