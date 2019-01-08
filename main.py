@@ -119,5 +119,5 @@ if __name__ == '__main__':
     for epoch_idx in range(start_epoch, args.epochs):
         epoch(epoch_idx, is_train=True)
         epoch(epoch_idx, is_train=False)
-        save_checkpoint(epoch_idx, model if args.multi_gpu else model.module, optimizer, args.log)
+        save_checkpoint(epoch_idx, model.module if args.multi_gpu else model, optimizer, args.log)
     writer.close()
