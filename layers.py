@@ -1,7 +1,5 @@
-import torch
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence
-from utils import positional_encode
 
 
 class TextEncoder(nn.Module):
@@ -37,40 +35,6 @@ class Conv(nn.Module):
 
     def forward(self, x):
         x = self.net(x)
-        return x
-
-
-class ResBlock(nn.Module):
-    def __init__(self, filter, kernel):
-        super(ResBlock, self).__init__()
-        self.conv1 = nn.Conv2d(filter + 2, filter, 1, 1, 0)
-        self.conv2 = nn.Conv2d(filter, filter, kernel, 1, (kernel - 1)//2)
-        self.batch_norm = nn.BatchNorm2d(filter)
-        self.relu = nn.ReLU(inplace=True)
-
-    def forward(self, x, betagamma):
-        x = positional_encode(x)
-        x = self.relu(self.conv1(x))
-        residual = x
-        beta = betagamma[:, 0].unsqueeze(2).unsqueeze(3).expand_as(x)
-        gamma = betagamma[:, 1].unsqueeze(2).unsqueeze(3).expand_as(x)
-        x = self.batch_norm(self.conv2(x))
-        x = self.relu(x * beta + gamma)
-        x = x + residual
-        return x
-
-
-class Classifier(nn.Module):
-    def __init__(self, filter, last_filter, hidden, last, layer):
-        super(Classifier, self).__init__()
-        self.conv = nn.Conv2d(filter + 2, last_filter, 1, 1, 0)
-        # self.pool = nn.MaxPool2d((input_h, input_w))
-        self.mlp = MLP(last_filter, hidden, last, layer)
-
-    def forward(self, x):
-        x = positional_encode(x)
-        x = self.conv(x).max(2)[0].max(2)[0]
-        x = self.mlp(x)
         return x
 
 

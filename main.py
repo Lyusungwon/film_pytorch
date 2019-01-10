@@ -2,7 +2,8 @@ import torch.optim as optim
 from tensorboardX import SummaryWriter
 from utils import *
 from configuration import get_config
-from model import Film
+from film import Film
+from san import San
 import dataloader
 from collections import defaultdict
 
@@ -18,7 +19,11 @@ args.qt_size = 5
 if args.te_pretrained:
     args.word2idx = train_loader.dataset.word_to_idx
 
-model = Film(args)
+if args.model == 'film':
+    model = Film(args)
+elif args.model == 'san':
+    model = San(args)
+
 if args.multi_gpu:
     model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
 optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -97,10 +102,8 @@ def epoch(epoch_idx, is_train):
         total_correct / len(loader.dataset)))
     writer.add_scalar('{} loss'.format(mode), epoch_loss / len(loader.dataset), epoch_idx)
     writer.add_scalar('{} total accuracy'.format(mode), total_correct / len(loader.dataset), epoch_idx)
-    q_acc = {}
     for i in range(args.qt_size):
-        q_acc['question {}'.format(str(i))] = q_correct[i] / q_num[i]
-    writer.add_scalars('{} accuracy per question'.format(mode), q_acc, epoch_idx)
+        writer.add_scalar('{} accuracy for question {}'.format(mode, i), q_correct[i] / q_num[i], epoch_idx)
     # q_corrects = list(q_correct.values())
     # q_nums = list(q_num.values())
     # writer.add_scalar('{} non-rel accuracy'.format(mode), sum(q_corrects[:3]) / sum(q_nums[:3]), epoch_idx)

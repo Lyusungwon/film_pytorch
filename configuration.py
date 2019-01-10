@@ -14,29 +14,31 @@ def get_config():
     model_arg.add_argument('--model', type=str, default='film')
     # Convolution
     model_arg.add_argument('--cv-pretrained', action='store_true')
-    model_arg.add_argument('--cv-filter', type=int, default=128)
-    model_arg.add_argument('--cv-kernel', type=int, default=4)
-    model_arg.add_argument('--cv-stride', type=int, default=2)
-    model_arg.add_argument('--cv-layer', type=int, default=4)
+    model_arg.add_argument('--cv-filter', type=int, default=512)## film 128
+    model_arg.add_argument('--cv-kernel', type=int, default=4)## film 4
+    model_arg.add_argument('--cv-stride', type=int, default=2)## film 2
+    model_arg.add_argument('--cv-layer', type=int, default=4)## film 4
     model_arg.add_argument('--cv-batchnorm', action='store_false')
     # Text Encoder
     model_arg.add_argument('--te-pretrained', action='store_true')
-    model_arg.add_argument('--te-embedding', type=int, default=200)
-    model_arg.add_argument('--te-hidden', type=int, default=4096)
-    model_arg.add_argument('--te-layer', type=int, default=1)
+    model_arg.add_argument('--te-embedding', type=int, default=100)## film 200
+    model_arg.add_argument('--te-hidden', type=int, default=512)## film 4096
+    model_arg.add_argument('--te-layer', type=int, default=1)## film 1
     # film
-    model_arg.add_argument('--res-kernel', type=int, default=3)
-    model_arg.add_argument('--res-layer', type=int, default=4)
-    # classifier
-    model_arg.add_argument('--cf-filter', type=int, default=512)
-    model_arg.add_argument('--fc-hidden', type=int, default=1024)
-    model_arg.add_argument('--fc-layer', type=int, default=2)
+    model_arg.add_argument('--film-res-kernel', type=int, default=3)
+    model_arg.add_argument('--film-res-layer', type=int, default=4)
+    model_arg.add_argument('--film-cf-filter', type=int, default=512)
+    model_arg.add_argument('--film-fc-hidden', type=int, default=1024)
+    model_arg.add_argument('--film-fc-layer', type=int, default=2)
+    # san
+    model_arg.add_argument('--san-layer', type=int, default=2)
+    model_arg.add_argument('--san-k', type=int, default=640)
 
     data_arg = parser.add_argument_group('Data')
     data_arg.add_argument('--data-directory', type=str, default=os.path.join(home,'data'), metavar='N', help='directory of data')
     data_arg.add_argument('--dataset', type=str, default='clevr')
-    data_arg.add_argument('--input-h', type=int, default=224)
-    data_arg.add_argument('--input-w', type=int, default=224)
+    data_arg.add_argument('--input-h', type=int, default=128)
+    data_arg.add_argument('--input-w', type=int, default=128)
 
     train_arg = parser.add_argument_group('Train')
     train_arg.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default: 64)')
@@ -64,13 +66,20 @@ def get_config():
 
     args.data_config = [args.input_h, args.input_w, args.cpu_num]
 
-    config_list = [args.project, args.model, args.dataset, args.epochs, args.batch_size, args.lr, args.device, args.multi_gpu, args.gpu_num] + \
-                  args.data_config + \
-                  ['cv', args.cv_pretrained, args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
-                   'te', args.te_pretrained, args.te_embedding, args.te_hidden, args.te_layer,
-                   'res', args.res_kernel, args.res_layer,
-                   'cf', args.cf_filter, args.fc_hidden, args.fc_layer,
-                   args.memo]
+    config_list = [args.project, args.model, args.dataset, args.epochs, args.batch_size, args.lr,
+                   args.device, args.multi_gpu, args.gpu_num] + args.data_config + \
+                ['cv', args.cv_pretrained, args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
+                 'te', args.te_pretrained, args.te_embedding, args.te_hidden, args.te_layer]
+
+    if args.model == 'film':
+        config_list = config_list + \
+            ['film', args.film_res_kernel, args.film_res_layer,
+             args.film_cf_filter, args.film_fc_hidden, args.film_fc_layer,
+             args.memo]
+    elif args.model == 'san':
+        config_list = config_list + \
+            ['san', args.san_layer, args.san_k,
+             args.memo]
 
     args.config = '_'.join(map(str, config_list))
     if args.load_model:
