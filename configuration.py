@@ -2,6 +2,7 @@ import os
 import torch
 import argparse
 import datetime
+from configloader import load_default_config
 from pathlib import Path
 home = str(Path.home())
 
@@ -12,18 +13,20 @@ def get_config():
     model_arg = parser.add_argument_group('Model')
     model_arg.add_argument('--project', type=str, default='film')
     model_arg.add_argument('--model', type=str, default='film')
+    # Load configuration of the paper
+    model_arg.add_argument('--load-default', action='store_true')
     # Convolution
     model_arg.add_argument('--cv-pretrained', action='store_true')
-    model_arg.add_argument('--cv-filter', type=int, default=512)## film 128
-    model_arg.add_argument('--cv-kernel', type=int, default=4)## film 4
-    model_arg.add_argument('--cv-stride', type=int, default=2)## film 2
-    model_arg.add_argument('--cv-layer', type=int, default=4)## film 4
+    model_arg.add_argument('--cv-filter', type=int, default=512)
+    model_arg.add_argument('--cv-kernel', type=int, default=4)
+    model_arg.add_argument('--cv-stride', type=int, default=2)
+    model_arg.add_argument('--cv-layer', type=int, default=4)
     model_arg.add_argument('--cv-batchnorm', action='store_false')
     # Text Encoder
     model_arg.add_argument('--te-pretrained', action='store_true')
-    model_arg.add_argument('--te-embedding', type=int, default=100)## film 200
-    model_arg.add_argument('--te-hidden', type=int, default=512)## film 4096
-    model_arg.add_argument('--te-layer', type=int, default=1)## film 1
+    model_arg.add_argument('--te-embedding', type=int, default=200)
+    model_arg.add_argument('--te-hidden', type=int, default=512)
+    model_arg.add_argument('--te-layer', type=int, default=1)
     # film
     model_arg.add_argument('--film-res-kernel', type=int, default=3)
     model_arg.add_argument('--film-res-layer', type=int, default=4)
@@ -57,6 +60,9 @@ def get_config():
     train_arg.add_argument('--load-model', type=str, default=None, metavar='N', help='load previous model')
 
     args, unparsed = parser.parse_known_args()
+
+    if args.load_default:
+        args = load_default_config(args)
 
     if not torch.cuda.is_available():
         args.device = torch.device('cpu')
