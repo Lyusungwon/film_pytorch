@@ -44,7 +44,8 @@ def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_co
     elif data == 'vqa2':
         dataloader = DataLoader(
             VQA2(os.path.join(data_directory, data), train=is_train,
-            transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
+            # transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
+            transform=transforms.Compose([transforms.ToTensor()])),
             batch_size=batch_size, shuffle=True,
             num_workers=cpu_num, pin_memory=True,
             collate_fn=collate_text)
@@ -141,8 +142,8 @@ class VQA2(Dataset):
     def __getitem__(self, idx):
         image_idx, q, a, q_t, a_t = self.data[idx]
         image = Image.open(os.path.join(self.img_dir, 'COCO_{}2014_{}.jpg'.format(self.mode, str(image_idx).zfill(12)))).convert('RGB')
-        # if self.transform:
-        #     image = self.transform(image)
+        if self.transform:
+            image = self.transform(image)
         return image, q, a, q_t, a_t
 
 
