@@ -6,7 +6,7 @@ class Film(nn.Module):
     def __init__(self, args):
         super(Film, self).__init__()
         self.filters = args.cv_filter
-        self.layers = args.res_layer
+        self.layers = args.film_res_layer
         if args.te_pretrained:
             pretrained_weight = load_pretrained_embedding(args.word2idx, args.te_embedding)
         else:
@@ -16,9 +16,9 @@ class Film(nn.Module):
             self.visual_encoder = load_pretrained_conv(args.cv_filter)
         else:
             self.visual_encoder = Conv(args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm)
-        self.fc = nn.Linear(args.te_hidden, args.cv_filter * args.res_layer * 2)
-        self.res_blocks = nn.ModuleList([FilmResBlock(args.cv_filter, args.res_kernel) for _ in range(args.res_layer)])
-        self.classifier = FilmClassifier(args.cv_filter, args.cf_filter, args.fc_hidden, args.a_size, args.fc_layer)
+        self.fc = nn.Linear(args.te_hidden, args.cv_filter * args.film_res_layer * 2)
+        self.res_blocks = nn.ModuleList([FilmResBlock(args.cv_filter, args.film_res_kernel) for _ in range(args.film_res_layer)])
+        self.classifier = FilmClassifier(args.cv_filter, args.film_cf_filter, args.film_fc_hidden, args.a_size, args.film_fc_layer)
 
     def forward(self, image, question, question_length):
         x = self.visual_encoder(image)
