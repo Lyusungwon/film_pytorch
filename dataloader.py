@@ -10,7 +10,25 @@ from make_clevr import make_data
 home = str(Path.home())
 
 
-def collate_text(list_inputs):
+def collate_clevr(list_inputs):
+    list_inputs.sort(key=lambda x: len(x[1]), reverse=True)
+    images = torch.Tensor()
+    questions = []
+    q_length = []
+    answers = torch.Tensor().to(torch.long)
+    question_types = torch.Tensor().to(torch.long)
+    for i, q, a, q_type in list_inputs:
+        images = torch.cat([images, i.unsqueeze(0)], 0)
+        questions.append(q)
+        q_length.append(len(q))
+        answers = torch.cat([answers, a], 0)
+        question_types = torch.cat([question_types, q_type], 0)
+    padded_questions = pad_sequence(questions, batch_first=True)
+    q_length = torch.Tensor(q_length).to(torch.long)
+    return images, (padded_questions, q_length), answers, question_types
+
+
+def collate_vqa(list_inputs):
     list_inputs.sort(key=lambda x: len(x[1]), reverse=True)
     images = torch.Tensor()
     questions = []
@@ -39,16 +57,15 @@ def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_co
             transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
             batch_size=batch_size, shuffle=True,
             num_workers=cpu_num, pin_memory=True,
-            collate_fn=collate_text)
+            collate_fn=collate_clevr)
         return dataloader
     elif data == 'vqa2':
         dataloader = DataLoader(
             VQA2(os.path.join(data_directory, data), train=is_train,
-            # transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
-            transform=transforms.Compose([transforms.ToTensor()])),
+            transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
             batch_size=batch_size, shuffle=True,
             num_workers=cpu_num, pin_memory=True,
-            collate_fn=collate_text)
+            collate_fn=collate_vqa)
         return dataloader
 
 
@@ -151,8 +168,8 @@ if __name__ =='__main__':
     dataloader = load_dataloader('vqa2', os.path.join(home, 'data'), True, 2)
     for img, q, a, q_t, a_t in dataloader:
         print(img.size())
-        print(q.size())
-        print(a.size())
-        print(q_t.size())
-        print(a_t.size())
+        print(q)
+        print(a)
+        print(q_t)
+        print(a_t)
         break
