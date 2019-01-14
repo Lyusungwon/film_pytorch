@@ -16,7 +16,7 @@ def get_config():
     # Load configuration of the paper
     model_arg.add_argument('--load-default', action='store_true')
     # Convolution
-    model_arg.add_argument('--cv-pretrained', action='store_true')
+    model_arg.add_argume nt('--cv-pretrained', action='store_true')
     model_arg.add_argument('--cv-filter', type=int, default=512)
     model_arg.add_argument('--cv-kernel', type=int, default=4)
     model_arg.add_argument('--cv-stride', type=int, default=2)

@@ -16,6 +16,7 @@ test_loader = dataloader.load_dataloader(args.dataset, args.data_directory, Fals
 args.a_size = train_loader.dataset.a_size
 args.q_size = train_loader.dataset.q_size
 args.qt_size = 5
+start_epoch = 0
 if args.te_pretrained:
     args.word2idx = train_loader.dataset.word_to_idx
 
@@ -31,7 +32,6 @@ optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_
 if args.load_model:
     model, optimizer, start_epoch = load_checkpoint(model, optimizer, args.log, device)
 model = model.to(device)
-start_epoch = 0
 
 
 def epoch(epoch_idx, is_train):
