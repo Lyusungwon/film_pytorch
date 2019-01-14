@@ -44,14 +44,14 @@ def epoch(epoch_idx, is_train):
     q_num = defaultdict(lambda: 0)
     model.train() if is_train else model.eval()
     loader = train_loader if is_train else test_loader
-    for batch_idx, (image, question_set, answer, question_type) in enumerate(loader):
+    for batch_idx, (image, question_set, answer, types) in enumerate(loader):
         batch_size = image.size()[0]
         optimizer.zero_grad()
         image = image.to(device)
         question = question_set[0].to(device)
         question_length = question_set[1].to(device)
         answer = answer.to(device)
-        question_type = question_type.to(device)
+        # question_type = question_type.to(device)
         output = model(image * 2 - 1, question, question_length)
         loss = F.cross_entropy(output, answer)
         if is_train:
@@ -63,10 +63,10 @@ def epoch(epoch_idx, is_train):
         correct = (pred == answer)
         batch_correct = correct.sum().item()
         total_correct += batch_correct
-        for i in range(args.qt_size):
-            idx = question_type//10 - 1 == i
-            q_correct[i] += (correct * idx).sum().item()
-            q_num[i] += idx.sum().item()
+        # for i in range(args.qt_size):
+        #     idx = question_type//10 - 1 == i
+        #     q_correct[i] += (correct * idx).sum().item()
+        #     q_num[i] += idx.sum().item()
         if is_train:
             if batch_idx % args.log_interval == 0:
                 print('Train Batch: {} [{}/{} ({:.0f}%)] Loss: {:.4f} / Time: {:.4f} / Acc: {:.4f}'.format(
@@ -103,8 +103,8 @@ def epoch(epoch_idx, is_train):
         total_correct / len(loader.dataset)))
     writer.add_scalar('{} loss'.format(mode), epoch_loss / len(loader.dataset), epoch_idx)
     writer.add_scalar('{} total accuracy'.format(mode), total_correct / len(loader.dataset), epoch_idx)
-    for i in range(args.qt_size):
-        writer.add_scalar('{} accuracy for question {}'.format(mode, i), q_correct[i] / q_num[i], epoch_idx)
+    # for i in range(args.qt_size):
+    #     writer.add_scalar('{} accuracy for question {}'.format(mode, i), q_correct[i] / q_num[i], epoch_idx)
     # q_corrects = list(q_correct.values())
     # q_nums = list(q_num.values())
     # writer.add_scalar('{} non-rel accuracy'.format(mode), sum(q_corrects[:3]) / sum(q_nums[:3]), epoch_idx)

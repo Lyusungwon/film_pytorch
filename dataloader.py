@@ -25,7 +25,7 @@ def collate_clevr(list_inputs):
         question_types = torch.cat([question_types, q_type], 0)
     padded_questions = pad_sequence(questions, batch_first=True)
     q_length = torch.Tensor(q_length).to(torch.long)
-    return images, (padded_questions, q_length), answers, question_types
+    return images, (padded_questions, q_length), answers, [question_types]
 
 
 def collate_vqa(list_inputs):
@@ -44,9 +44,8 @@ def collate_vqa(list_inputs):
         question_types = torch.cat([question_types, q_type], 0)
         answer_types = torch.cat([answer_types, a_type], 0)
     padded_questions = pad_sequence(questions, batch_first=True)
-
     q_length = torch.Tensor(q_length).to(torch.long)
-    return images, (padded_questions, q_length), answers, question_types, answer_types
+    return images, (padded_questions, q_length), answers, [question_types, answer_types]
 
 
 def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_config=[224, 224, 0]):
@@ -63,6 +62,7 @@ def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_co
         dataloader = DataLoader(
             VQA2(os.path.join(data_directory, data), train=is_train,
             transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
+            # transform=transforms.Compose([transforms.ToTensor()])),
             batch_size=batch_size, shuffle=True,
             num_workers=cpu_num, pin_memory=True,
             collate_fn=collate_vqa)
@@ -145,11 +145,14 @@ class VQA2(Dataset):
             self.dict = pickle.load(file)
         self.word_to_idx = self.dict['word_to_idx']
         self.idx_to_word = self.dict['idx_to_word']
+        self.answer_word_to_idx = self.dict['answer_word_to_idx']
+        self.answer_idx_to_word = self.dict['answer_idx_to_word']
         self.question_type_to_idx = self.dict['question_type_to_idx']
         self.idx_to_question_type = self.dict['idx_to_question_type']
         self.answer_type_to_idx = self.dict['answer_type_to_idx']
         self.idx_to_answer_type = self.dict['idx_to_answer_type']
         self.q_size = len(self.word_to_idx)
+        self.a_size = len(self.answer_word_to_idx)
         self.qt_size = len(self.question_type_to_idx)
         self.at_size = len(self.answer_type_to_idx)
 
@@ -166,10 +169,5 @@ class VQA2(Dataset):
 
 if __name__ =='__main__':
     dataloader = load_dataloader('vqa2', os.path.join(home, 'data'), True, 2)
-    for img, q, a, q_t, a_t in dataloader:
-        print(img.size())
-        print(q)
+    for img, q, a, types in dataloader:
         print(a)
-        print(q_t)
-        print(a_t)
-        break

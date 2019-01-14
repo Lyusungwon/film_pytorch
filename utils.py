@@ -5,7 +5,6 @@ import torch.nn.functional as F
 import time
 
 
-
 def timefn(fn):
     def wrap(*args):
         t1 = time.time()
