@@ -27,8 +27,9 @@ elif args.model == 'san':
 if args.multi_gpu:
     model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
 optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+
 if args.load_model:
-    model, optimizer, start_epoch = load_checkpoint(model, optimizer, args.log)
+    model, optimizer, start_epoch = load_checkpoint(model, optimizer, args.log, device)
 model = model.to(device)
 start_epoch = 0
 

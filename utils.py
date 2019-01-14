@@ -36,11 +36,15 @@ def save_checkpoint(epoch_idx, model, optimizer, log):
     return True
 
 
-def load_checkpoint(model, optimizer, log):
+def load_checkpoint(model, optimizer, log, device):
     load_file = os.path.join(log, 'checkpoint.pt')
     checkpoint = torch.load(load_file)
     model.load_state_dict(checkpoint['model_parameters'])
     optimizer.load_state_dict(checkpoint['optimizer_parameters'])
+    for state in optimizer.state.values():
+        for k, v in state.items():
+            if isinstance(v, torch.Tensor):
+                state[k] = v.to(device)
     epoch_idx = checkpoint['epoch']
     print('Model loaded from {}.'.format(load_file))
     return model, optimizer, epoch_idx
