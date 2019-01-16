@@ -50,7 +50,7 @@ def collate_vqa(list_inputs):
 
 def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_config=[224, 224, 0]):
     input_h, input_w, cpu_num = data_config
-    if data == 'clevr':
+    if data == 'clevr' or data == 'sample':
         dataloader = DataLoader(
             Clevr(os.path.join(data_directory, data), train=is_train,
             transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
@@ -62,7 +62,6 @@ def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_co
         dataloader = DataLoader(
             VQA2(os.path.join(data_directory, data), train=is_train,
             transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
-            # transform=transforms.Compose([transforms.ToTensor()])),
             batch_size=batch_size, shuffle=True,
             num_workers=cpu_num, pin_memory=True,
             collate_fn=collate_vqa)
@@ -94,16 +93,6 @@ class Clevr(Dataset):
         print("Start loading {}".format(self.data_file))
         with open(self.data_file, 'rb') as file:
             self.data = pickle.load(file)
-        with open(self.dict_file, 'rb') as file:
-            self.dict = pickle.load(file)
-        self.word_to_idx = self.dict['question']['word_to_idx']
-        self.idx_to_word = self.dict['question']['idx_to_word']
-        self.answer_word_to_idx = self.dict['answer']['word_to_idx']
-        self.answer_idx_to_word = self.dict['answer']['idx_to_word']
-        self.question_type_dict = self.dict['question_type']
-        self.q_size = len(self.word_to_idx)
-        self.a_size = len(self.answer_word_to_idx)
-        self.qt_size = len(self.question_type_dict)
 
     def __len__(self):
         return len(self.data)
@@ -141,20 +130,6 @@ class VQA2(Dataset):
         print("Start loading {}".format(self.data_file))
         with open(self.data_file, 'rb') as file:
             self.data = pickle.load(file)
-        with open(self.dict_file, 'rb') as file:
-            self.dict = pickle.load(file)
-        self.word_to_idx = self.dict['word_to_idx']
-        self.idx_to_word = self.dict['idx_to_word']
-        self.answer_word_to_idx = self.dict['answer_word_to_idx']
-        self.answer_idx_to_word = self.dict['answer_idx_to_word']
-        self.question_type_to_idx = self.dict['question_type_to_idx']
-        self.idx_to_question_type = self.dict['idx_to_question_type']
-        self.answer_type_to_idx = self.dict['answer_type_to_idx']
-        self.idx_to_answer_type = self.dict['idx_to_answer_type']
-        self.q_size = len(self.word_to_idx)
-        self.a_size = len(self.answer_word_to_idx)
-        self.qt_size = len(self.question_type_to_idx)
-        self.at_size = len(self.answer_type_to_idx)
 
     def __len__(self):
         return len(self.data)
@@ -170,4 +145,8 @@ class VQA2(Dataset):
 if __name__ =='__main__':
     dataloader = load_dataloader('vqa2', os.path.join(home, 'data'), True, 2)
     for img, q, a, types in dataloader:
+        print(img.size())
+        print(q)
         print(a)
+        print(types)
+        break

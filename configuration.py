@@ -2,6 +2,7 @@ import os
 import torch
 import argparse
 import datetime
+import pickle
 from configloader import load_default_config
 from pathlib import Path
 home = str(Path.home())
@@ -96,4 +97,22 @@ def get_config():
 
     print("Config:", args.config)
 
+    args = load_dict(args)
+
+    return args
+
+
+def load_dict(args):
+    dict_file = os.path.join(args.data_directory, args.dataset, 'data_dict.pkl')
+    with open(dict_file, 'rb') as file:
+        data_dict = pickle.load(file)
+    args.word_to_idx = data_dict['word_to_idx']
+    args.idx_to_word = data_dict['idx_to_word']
+    args.answer_word_to_idx = data_dict['answer_word_to_idx']
+    args.answer_idx_to_word = data_dict['answer_idx_to_word']
+    args.question_type_to_idx = data_dict['question_type_to_idx']
+    args.idx_to_question_type = data_dict['idx_to_question_type']
+    args.q_size = len(args.word_to_idx)
+    args.a_size = len(args.answer_word_to_idx)
+    args.qt_size = len(args.question_type_to_idx)
     return args

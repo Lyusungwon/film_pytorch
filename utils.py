@@ -24,11 +24,12 @@ def positional_encode(images):
     return images
 
 
-def save_checkpoint(epoch_idx, model, optimizer, log):
+def save_checkpoint(epoch_idx, model, optimizer, log, batch_record_idx):
     checkpoint = dict()
     checkpoint['model_parameters'] = model.state_dict()
     checkpoint['optimizer_parameters'] = optimizer.state_dict()
     checkpoint['epoch'] = epoch_idx
+    checkpoint['batch_idx'] = batch_record_idx
     save_file = os.path.join(log, 'checkpoint.pt')
     torch.save(checkpoint, save_file)
     print('Model saved in {}'.format(save_file))
@@ -45,8 +46,9 @@ def load_checkpoint(model, optimizer, log, device):
             if isinstance(v, torch.Tensor):
                 state[k] = v.to(device)
     epoch_idx = checkpoint['epoch']
+    batch_record_idx = checkpoint['batch_idx']
     print('Model loaded from {}.'.format(load_file))
-    return model, optimizer, epoch_idx
+    return model, optimizer, epoch_idx, batch_record_idx
 
 
 def load_pretrained_embedding(word2idx, embedding_dim):
