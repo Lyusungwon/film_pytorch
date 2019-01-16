@@ -28,7 +28,7 @@ def load_default_config(args):
         args.san_k = 640
         args.batch_size = 100
         return args
-    elif args.model == 'rn' and args.dataset == 'clevr':
+    elif args.model == 'rn':
         args.input_h = 128
         args.input_w = 128
         args.cv_filter = 24

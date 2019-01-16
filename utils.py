@@ -62,10 +62,12 @@ def lower_sum(relations):
     return relations.sum(1)
 
 
-def save_checkpoint(epoch_idx, model, optimizer, log, batch_record_idx):
+def save_checkpoint(epoch_idx, model, optimizer, args, batch_record_idx):
+    log = args.log
     checkpoint = dict()
     checkpoint['model_parameters'] = model.state_dict()
     checkpoint['optimizer_parameters'] = optimizer.state_dict()
+    checkpoint['args'] = args
     checkpoint['epoch'] = epoch_idx
     checkpoint['batch_idx'] = batch_record_idx
     save_file = os.path.join(log, 'checkpoint.pt')

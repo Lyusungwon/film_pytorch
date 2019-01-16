@@ -44,7 +44,6 @@ def epoch(epoch_idx, is_train):
         question = question_set[0].to(device)
         question_length = question_set[1].to(device)
         answer = answer.to(device)
-        # types =
         output = model(image * 2 - 1, question, question_length)
         loss = F.cross_entropy(output, answer)
         if is_train:
@@ -66,5 +65,5 @@ if __name__ == '__main__':
     for epoch_idx in range(start_epoch, args.epochs):
         epoch(epoch_idx, is_train=True)
         epoch(epoch_idx, is_train=False)
-        save_checkpoint(epoch_idx, model.module if args.multi_gpu else model, optimizer, args.log, recorder.batch_record_idx)
+        save_checkpoint(epoch_idx, model.module if args.multi_gpu else model, optimizer, args, recorder.batch_record_idx)
     writer.close()
