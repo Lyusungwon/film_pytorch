@@ -48,6 +48,7 @@ def get_config():
     data_arg.add_argument('--dataset', type=str, default='clevr')
     data_arg.add_argument('--input-h', type=int, default=128)
     data_arg.add_argument('--input-w', type=int, default=128)
+    data_arg.add_argument('--reduced-data', action='store_true')
 
     train_arg = parser.add_argument_group('Train')
     train_arg.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default: 64)')
@@ -76,7 +77,7 @@ def get_config():
         torch.cuda.set_device(args.device)
         args.device = torch.device(args.device)
 
-    args.data_config = [args.input_h, args.input_w, args.cpu_num]
+    args.data_config = [args.input_h, args.input_w, args.cpu_num, args.reduced_data]
 
     config_list = [args.project, args.model, args.dataset, args.epochs, args.batch_size, args.lr,
                    args.device, args.multi_gpu, args.gpu_num] + args.data_config + \

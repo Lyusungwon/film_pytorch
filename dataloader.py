@@ -49,30 +49,30 @@ def collate_vqa(list_inputs):
     return images, (padded_questions, q_length), answers, [question_types, answer_types]
 
 
-def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_config=[224, 224, 0]):
-    input_h, input_w, cpu_num = data_config
+def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_config=[224, 224, 0, False]):
+    input_h, input_w, cpu_num, reduced_data = data_config
     if data == 'clevr' or data == 'sample':
         dataloader = DataLoader(
-            Clevr(os.path.join(data_directory, data), train=is_train,
+            Clevr(os.path.join(data_directory, data), train=is_train, reduced_data=reduced_data,
             transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
-            batch_size=batch_size, shuffle=True,
+            batch_size=batch_size, shuffle=True if not reduced_data else False,
             num_workers=cpu_num, pin_memory=True,
             collate_fn=collate_clevr)
-        return dataloader
     elif data == 'vqa2':
         dataloader = DataLoader(
             VQA2(os.path.join(data_directory, data), train=is_train,
             transform=transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])),
-            batch_size=batch_size, shuffle=True,
+            batch_size=batch_size, shuffle=True if not reduced_data else False,
             num_workers=cpu_num, pin_memory=True,
             collate_fn=collate_vqa)
-        return dataloader
+    return dataloader
 
 
 class Clevr(Dataset):
     """Clevr dataset."""
-    def __init__(self, data_dir, train=True, transform=None):
+    def __init__(self, data_dir, train=True, reduced_data=False, transform=None):
         self.mode = 'train' if train else 'val'
+        self.reduced_data = reduced_data
         self.transform = transform
         self.q_dir = os.path.join(data_dir, 'questions', 'CLEVR_{}_questions.json'.format(self.mode))
         self.img_dir = os.path.join(data_dir, 'images', '{}'.format(self.mode))
@@ -108,7 +108,7 @@ class Clevr(Dataset):
 
 class VQA2(Dataset):
     """VQA2.0 dataset."""
-    def __init__(self, data_dir, train=True, transform=None):
+    def __init__(self, data_dir, train=True, reduced_data=False, transform=None):
         self.mode = 'train' if train else 'val'
         self.transform = transform
         # self.q_dir = os.path.join(data_dir, 'questions', 'CLEVR_{}_questions.json'.format(self.mode))
