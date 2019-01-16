@@ -1,3 +1,4 @@
+import torch
 import time
 from collections import defaultdict
 
@@ -45,7 +46,17 @@ class Recorder:
         self.epoch_start_time = time.time()
         self.batch_start_time = time.time()
 
-    def epoch_end(self, idx_to_question_type=None):
+    def batch_end(self, loss, correct, types):
+        self.batch_end_time = time.time()
+        self.batch_loss = loss.item()
+        self.epoch_loss += loss.item()
+        self.record_types(correct, types)
+        self.batch_correct = correct.sum().item()
+        self.epoch_correct += correct.sum().item()
+        self.batch_time = self.batch_end_time - self.batch_start_time
+        self.batch_start_time = time.time()
+
+    def log_epoch(self, idx_to_question_type=None):
         if idx_to_question_type:
             self.idx_to_question_type = idx_to_question_type
         self.epoch_end_time = time.time()
@@ -56,28 +67,19 @@ class Recorder:
             self.epoch_loss / self.dataset_size,
             self.epoch_time,
             self.epoch_correct / self.dataset_size))
-        self.writer.add_scalar('[{}] 1. Total loss'.format(self.mode), self.epoch_loss / self.dataset_size, self.epoch_idx)
-        self.writer.add_scalar('[{}] 2. Total accuracy'.format(self.mode), self.epoch_correct / self.dataset_size, self.epoch_idx)
-        self.writer.add_scalar('[{}] 3. Total time'.format(self.mode), self.epoch_time, self.epoch_idx)
+        self.writer.add_scalar('{}-1. Total loss'.format(self.mode), self.epoch_loss / self.dataset_size, self.epoch_idx)
+        self.writer.add_scalar('{}-2. Total accuracy'.format(self.mode), self.epoch_correct / self.dataset_size, self.epoch_idx)
+        self.writer.add_scalar('{}-3. Total time'.format(self.mode), self.epoch_time, self.epoch_idx)
 
         for question_type_idx, question_type_name in self.idx_to_question_type.items():
             self.per_question_type['correct'][question_type_name] += self.per_question['correct'][question_type_idx]
             self.per_question_type['number'][question_type_name] += self.per_question['number'][question_type_idx]
         for question_type_name in self.per_question_type['correct'].keys():
             type_accuracy = self.per_question_type['correct'][question_type_name] / self.per_question_type['number'][question_type_name]
-            self.writer.add_scalar("[{}] 7. Question '{}' accuracy".format(self.mode, question_type_name), type_accuracy, self.epoch_idx)
-
-    def batch_end(self, loss, correct, types):
-        self.batch_end_time = time.time()
-        self.batch_loss = loss
-        self.epoch_loss += loss
-        self.record_types(correct, types)
-        self.batch_correct = correct.sum().item()
-        self.epoch_correct += correct.sum().item()
-        self.batch_time = self.batch_end_time - self.batch_start_time
-        self.batch_start_time = time.time()
+            self.writer.add_scalar("{}-7. Question '{}' accuracy".format(self.mode, question_type_name), type_accuracy, self.epoch_idx)
 
     def record_types(self, correct, types):
+        correct = correct.cpu()
         for question_type in types:
             for i in range(self.qt_size):
                 idx = question_type == i
@@ -92,20 +94,17 @@ class Recorder:
             self.batch_loss / batch_size,
             self.batch_time,
             self.batch_correct / batch_size))
-        self.writer.add_scalar('\[{}\] 4. Batch loss'.format(self.mode), self.batch_loss / batch_size, self.batch_record_idx)
-        self.writer.add_scalar('\[{}\] 5. Batch accuracy'.format(self.mode), self.batch_correct / batch_size, self.batch_record_idx)
-        self.writer.add_scalar('\[{}\] 6. Batch time'.format(self.mode), self.batch_time, self.batch_record_idx)
+        self.writer.add_scalar('{}-4. Batch loss'.format(self.mode), self.batch_loss / batch_size, self.batch_record_idx)
+        self.writer.add_scalar('{}-5. Batch accuracy'.format(self.mode), self.batch_correct / batch_size, self.batch_record_idx)
+        self.writer.add_scalar('{}-6. Batch time'.format(self.mode), self.batch_time, self.batch_record_idx)
         self.batch_record_idx += 1
 
-    def log_data(self, image, question):
+    def log_data(self, image, question, answer):
         n = min(self.batch_size, 4)
-        pad_question, lengths = pad_packed_sequence(question)
-        pad_question = pad_question.transpose(0, 1)
-        question_text = [' '.join([self.idx_to_word[i] for i in q]) for q in
-                         pad_question.cpu().numpy()[:n]]
+        question_text = [' '.join([self.idx_to_word[i] for i in q]) for q in question.cpu().numpy()[:n]]
         answer_text = [self.answer_idx_to_word[a] for a in answer.cpu().numpy()[:n]]
         text = []
-        for j, (q, a) in enumerate(zip(question_text, answer_text)):
-            text.append('Quesetion {}: '.format(j) + question_text[j] + '/ Answer: ' + answer_text[j])
-        writer.add_image('Image', torch.cat([image[:n]]), self.epoch_idx)
-        writer.add_text('QA', '\n'.join(text), self.epoch_idx)
+        for j, (question, answer) in enumerate(zip(question_text, answer_text)):
+            text.append(f'Quesetion {j}: {question} / Answer: {answer}')
+        self.writer.add_image('Image', torch.cat([image[:n]]), self.epoch_idx)
+        self.writer.add_text('QA', '\n'.join(text), self.epoch_idx)

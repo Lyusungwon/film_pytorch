@@ -39,15 +39,16 @@ class Conv(nn.Module):
 
 
 class MLP(nn.Module):
-    def __init__(self, input, hidden, output, layer):
+    def __init__(self, input, hidden, output, layer, dropout=None):
         super(MLP, self).__init__()
         layers = [input] + [hidden for _ in range(layer)] + [output]
         net = []
         for n, (inp, outp) in enumerate(zip(layers, layers[1:])):
             net.append(nn.Linear(inp, outp))
             net.append(nn.ReLU(inplace=True))
-            # if self.dropout == n + 1:
-            #     net.append(nn.Dropout(self.dropout_rate))
+            if dropout and n == layer - 1:
+                # net.insert(-3, nn.Dropout(dropout))
+                net.append(nn.Dropout(dropout))
         net = nn.ModuleList(net[:-1])
         self.net = nn.Sequential(*net)
         print(self.net)

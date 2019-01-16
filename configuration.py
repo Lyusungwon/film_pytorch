@@ -2,7 +2,6 @@ import os
 import torch
 import argparse
 import datetime
-import pickle
 from configloader import load_default_config
 from pathlib import Path
 home = str(Path.home())
@@ -37,6 +36,12 @@ def get_config():
     # san
     model_arg.add_argument('--san-layer', type=int, default=2)
     model_arg.add_argument('--san-k', type=int, default=640)
+    # rn
+    model_arg.add_argument('--rn-gt-hidden', type=int, default=2)
+    model_arg.add_argument('--rn-gt-layer', type=int, default=2)
+    model_arg.add_argument('--rn-fp-hidden', type=int, default=2)
+    model_arg.add_argument('--rn-fp-layer', type=int, default=2)
+    model_arg.add_argument('--rn-fp-dropout', type=int, default=2)
 
     data_arg = parser.add_argument_group('Data')
     data_arg.add_argument('--data-directory', type=str, default=os.path.join(home,'data'), metavar='N', help='directory of data')
@@ -87,6 +92,10 @@ def get_config():
         config_list = config_list + \
             ['san', args.san_layer, args.san_k,
              args.memo]
+    elif args.model == 'rn':
+        config_list = config_list + \
+            ['rn', args.rn_gt_hidden, args.rn_gt_layer, args.rn_fp_hidden, args.rn_fp_layer, args.rn_fp_dropout,
+             args.memo]
 
     args.config = '_'.join(map(str, config_list))
     if args.load_model:
@@ -95,24 +104,6 @@ def get_config():
     else:
         args.log = os.path.join(args.log_directory, args.project, args.time_stamp + args.config)
 
-    print("Config:", args.config)
-
-    args = load_dict(args)
-
+    print(f"Config: {args.config}")
     return args
 
-
-def load_dict(args):
-    dict_file = os.path.join(args.data_directory, args.dataset, 'data_dict.pkl')
-    with open(dict_file, 'rb') as file:
-        data_dict = pickle.load(file)
-    args.word_to_idx = data_dict['word_to_idx']
-    args.idx_to_word = data_dict['idx_to_word']
-    args.answer_word_to_idx = data_dict['answer_word_to_idx']
-    args.answer_idx_to_word = data_dict['answer_idx_to_word']
-    args.question_type_to_idx = data_dict['question_type_to_idx']
-    args.idx_to_question_type = data_dict['idx_to_question_type']
-    args.q_size = len(args.word_to_idx)
-    args.a_size = len(args.answer_word_to_idx)
-    args.qt_size = len(args.question_type_to_idx)
-    return args

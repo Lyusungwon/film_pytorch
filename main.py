@@ -2,10 +2,11 @@ import torch.optim as optim
 from tensorboardX import SummaryWriter
 from utils import *
 from configuration import get_config
-from film import Film
-from san import San
 from recorder import Recorder
 import dataloader
+from film import Film
+from san import San
+from rn import RelationalNetwork
 
 args = get_config()
 device = args.device
@@ -13,6 +14,7 @@ torch.manual_seed(args.seed)
 
 train_loader = dataloader.load_dataloader(args.dataset, args.data_directory, True, args.batch_size, args.data_config)
 test_loader = dataloader.load_dataloader(args.dataset, args.data_directory, False, args.batch_size, args.data_config)
+args = load_dict(args)
 start_epoch = 0
 batch_record_idx = 0
 
@@ -20,13 +22,14 @@ if args.model == 'film':
     model = Film(args)
 elif args.model == 'san':
     model = San(args)
+elif args.model == 'rn':
+    model = RelationalNetwork(args)
+optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+if args.load_model:
+    model, optimizer, start_epoch, batch_record_idx = load_checkpoint(model, optimizer, args.log, device)
 
 if args.multi_gpu:
     model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
-optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-
-if args.load_model:
-    model, optimizer, start_epoch, batch_record_idx = load_checkpoint(model, optimizer, args.log, device)
 model = model.to(device)
 
 
@@ -49,12 +52,13 @@ def epoch(epoch_idx, is_train):
             optimizer.step()
         pred = torch.max(output.data, 1)[1]
         correct = (pred == answer)
-        recorder.batch_end(loss.item(), correct, types)
+        recorder.batch_end(loss, correct, types)
         if is_train and (batch_idx % args.log_interval == 0):
             recorder.log_batch(batch_idx, batch_size)
-    recorder.epoch_end()
-        # else:
-            # recorder.log_data(image.data, question.data)
+        elif not is_train:
+            recorder.log_data(image.data, question.data, answer.data)
+    recorder.log_epoch()
+
 
 if __name__ == '__main__':
     writer = SummaryWriter(args.log)

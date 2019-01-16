@@ -1,6 +1,7 @@
 import torch
 from layers import *
-from utils import load_pretrained_embedding, load_pretrained_conv
+from utils import *
+# from utils import load_pretrained_embedding, load_pretrained_conv
 
 
 class San(nn.Module):

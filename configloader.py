@@ -1,6 +1,6 @@
 
 def load_default_config(args):
-    if args.model == 'film':
+    if args.model == 'film' and args.dataset == 'clevr':
         args.cv_pretrained = True
         args.cv_filter = 128
         args.cv_kernel = 4
@@ -20,7 +20,7 @@ def load_default_config(args):
         args.lr = 3e-4
         args.weight_decay = 1e-5
         return args
-    elif args.model == 'san':
+    elif args.model == 'san' and args.dataset == 'vqa2':
         args.cv_pretrained = True
         args.cv_filter = 512
         args.te_hidden = 512
@@ -28,4 +28,22 @@ def load_default_config(args):
         args.san_k = 640
         args.batch_size = 100
         return args
-
+    elif args.model == 'rn' and args.dataset == 'clevr':
+        args.input_h = 128
+        args.input_w = 128
+        args.cv_filter = 24
+        args.cv_kernel = 3
+        args.cv_stride = 2
+        args.cv_layer = 4
+        args.cv_batchnorm = True
+        args.te_embedding = 32
+        args.te_hidden = 128
+        args.te_layer = 1
+        args.rn_gt_hidden = 256
+        args.rn_gt_layer = 4
+        args.rn_fp_hidden = 256
+        args.rn_fp_layer = 3
+        args.rn_fp_dropout = 0.5
+        args.learning_rate = 2.5e-4
+        args.batch_size = 64
+        return args
