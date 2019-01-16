@@ -19,7 +19,7 @@ parser.add_argument('--cpu-num', type=int, default=1)
 parser.add_argument('--is-train', action='store_true')
 parser.add_argument('--device', type=int, default=0, metavar='N', help='gpu number')
 args, unparsed = parser.parse_known_args()
-args.data_config = [args.input_h, args.input_w, args.cpu_num]
+args.data_config = [args.input_h, args.input_w, args.cpu_num, True]
 if not torch.cuda.is_available():
     args.device = torch.device('cpu')
 else:
