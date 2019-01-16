@@ -1,6 +1,5 @@
 from layers import *
-from utils import *
-# from utils import load_pretrained_embedding, load_pretrained_conv, positional_encode
+from utils import load_pretrained_embedding, load_pretrained_conv, positional_encode
 
 
 class Film(nn.Module):

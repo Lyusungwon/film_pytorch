@@ -1,4 +1,5 @@
 import torch.optim as optim
+import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 from utils import *
 from configuration import get_config
@@ -54,8 +55,8 @@ def epoch(epoch_idx, is_train):
         recorder.batch_end(loss, correct, types)
         if is_train and (batch_idx % args.log_interval == 0):
             recorder.log_batch(batch_idx, batch_size)
-        elif not is_train:
-            recorder.log_data(image.data, question.data, answer.data)
+    if not is_train:
+        recorder.log_data(image.data, question.data, answer.data)
     recorder.log_epoch()
 
 
@@ -63,7 +64,7 @@ if __name__ == '__main__':
     writer = SummaryWriter(args.log)
     recorder = Recorder(writer, args, batch_record_idx)
     for epoch_idx in range(start_epoch, args.epochs):
-        epoch(epoch_idx, is_train=True)
+        # epoch(epoch_idx, is_train=True)
         epoch(epoch_idx, is_train=False)
         save_checkpoint(epoch_idx, model.module if args.multi_gpu else model, optimizer, args, recorder.batch_record_idx)
     writer.close()

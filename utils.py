@@ -1,7 +1,6 @@
 import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import time
 import pickle
 
@@ -65,6 +64,7 @@ def lower_sum(relations):
 def save_checkpoint(epoch_idx, model, optimizer, args, batch_record_idx):
     log = args.log
     checkpoint = dict()
+    checkpoint['model'] = model
     checkpoint['model_parameters'] = model.state_dict()
     checkpoint['optimizer_parameters'] = optimizer.state_dict()
     checkpoint['args'] = args
@@ -103,14 +103,15 @@ def load_pretrained_embedding(word2idx, embedding_dim):
     return embedding
 
 
-def load_pretrained_conv(output_channel):
+def load_pretrained_conv(output_channel=None):
     import torchvision.models as models
     model = models.resnet101(pretrained=True)
     feature_extractor = list(model.children())[:-3]
     for part in feature_extractor:
         for param in part.parameters():
             param.requires_grad = False
-    feature_extractor.append(nn.Conv2d(1024, output_channel, 1, 1))
+    if output_channel:
+        feature_extractor.append(nn.Conv2d(1024, output_channel, 1, 1))
     feature_extractor = nn.Sequential(*feature_extractor)
     print("Loaded pretrained feature extraction model.")
     return feature_extractor

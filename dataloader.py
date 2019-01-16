@@ -6,7 +6,8 @@ from torch.nn.utils.rnn import pad_sequence
 import pickle
 from PIL import Image
 from pathlib import Path
-from make_clevr import make_data
+from clevr_maker import make_clevr
+from vqa2_maker import make_vqa2
 home = str(Path.home())
 
 
@@ -78,7 +79,7 @@ class Clevr(Dataset):
         self.data_file = os.path.join(data_dir, 'data_{}.pkl'.format(self.mode))
         self.dict_file = os.path.join(data_dir, 'data_dict.pkl')
         if not self.is_file_exits():
-            make_data(data_dir)
+            make_clevr(data_dir)
         self.load_data()
 
     def is_file_exits(self):
@@ -115,7 +116,7 @@ class VQA2(Dataset):
         self.data_file = os.path.join(data_dir, 'data_{}.pkl'.format(self.mode))
         self.dict_file = os.path.join(data_dir, 'data_dict.pkl')
         if not self.is_file_exits():
-            make_data(data_dir)
+            make_vqa2(data_dir)
         self.load_data()
 
     def is_file_exits(self):

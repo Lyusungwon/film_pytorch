@@ -56,6 +56,27 @@ class Recorder:
         self.batch_time = self.batch_end_time - self.batch_start_time
         self.batch_start_time = time.time()
 
+    def record_types(self, correct, types):
+        correct = correct.cpu()
+        for question_type in types:
+            for i in range(self.qt_size):
+                idx = question_type == i
+                self.per_question["correct"][i] += (correct * idx).sum().item()
+                self.per_question["number"][i] += idx.sum().item()
+
+    def log_batch(self, batch_idx, batch_size):
+        print('Train Batch: {} [{}/{} ({:.0f}%)] Loss: {:.4f} / Time: {:.4f} / Acc: {:.4f}'.format(
+            self.epoch_idx,
+            batch_idx * batch_size, self.dataset_size,
+            100. * batch_idx / self.batch_num,
+            self.batch_loss / batch_size,
+            self.batch_time,
+            self.batch_correct / batch_size))
+        self.writer.add_scalar('{}-4. Batch loss'.format(self.mode), self.batch_loss / batch_size, self.batch_record_idx)
+        self.writer.add_scalar('{}-5. Batch accuracy'.format(self.mode), self.batch_correct / batch_size, self.batch_record_idx)
+        self.writer.add_scalar('{}-6. Batch time'.format(self.mode), self.batch_time, self.batch_record_idx)
+        self.batch_record_idx += 1
+
     def log_epoch(self, idx_to_question_type=None):
         if idx_to_question_type:
             self.idx_to_question_type = idx_to_question_type
@@ -78,29 +99,9 @@ class Recorder:
             type_accuracy = self.per_question_type['correct'][question_type_name] / self.per_question_type['number'][question_type_name]
             self.writer.add_scalar("{}-7. Question '{}' accuracy".format(self.mode, question_type_name), type_accuracy, self.epoch_idx)
 
-    def record_types(self, correct, types):
-        correct = correct.cpu()
-        for question_type in types:
-            for i in range(self.qt_size):
-                idx = question_type == i
-                self.per_question["correct"][i] += (correct * idx).sum().item()
-                self.per_question["number"][i] += idx.sum().item()
-
-    def log_batch(self, batch_idx, batch_size):
-        print('Train Batch: {} [{}/{} ({:.0f}%)] Loss: {:.4f} / Time: {:.4f} / Acc: {:.4f}'.format(
-            self.epoch_idx,
-            batch_idx * batch_size, self.dataset_size,
-            100. * batch_idx / self.batch_num,
-            self.batch_loss / batch_size,
-            self.batch_time,
-            self.batch_correct / batch_size))
-        self.writer.add_scalar('{}-4. Batch loss'.format(self.mode), self.batch_loss / batch_size, self.batch_record_idx)
-        self.writer.add_scalar('{}-5. Batch accuracy'.format(self.mode), self.batch_correct / batch_size, self.batch_record_idx)
-        self.writer.add_scalar('{}-6. Batch time'.format(self.mode), self.batch_time, self.batch_record_idx)
-        self.batch_record_idx += 1
-
     def log_data(self, image, question, answer):
         n = min(self.batch_size, 4)
+        print(image.size())
         question_text = [' '.join([self.idx_to_word[i] for i in q]) for q in question.cpu().numpy()[:n]]
         answer_text = [self.answer_idx_to_word[a] for a in answer.cpu().numpy()[:n]]
         text = []
