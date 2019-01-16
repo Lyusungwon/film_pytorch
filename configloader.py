@@ -19,6 +19,7 @@ def load_default_config(args):
         args.batch_size = 64
         args.lr = 3e-4
         args.weight_decay = 1e-5
+        print(f"Default config for {args.model} loaded.")
         return args
     elif args.model == 'san' and args.dataset == 'vqa2':
         args.cv_pretrained = True
@@ -27,6 +28,7 @@ def load_default_config(args):
         args.san_layer = 1
         args.san_k = 640
         args.batch_size = 100
+        print(f"Default config for {args.model} loaded.")
         return args
     elif args.model == 'rn':
         args.input_h = 128
@@ -46,4 +48,7 @@ def load_default_config(args):
         args.rn_fp_dropout = 0.5
         args.learning_rate = 2.5e-4
         args.batch_size = 64
+        print(f"Default config for {args.model} loaded.")
+        return args
+    else:
         return args
