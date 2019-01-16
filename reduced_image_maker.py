@@ -3,6 +3,7 @@ import torch
 import dataloader
 import argparse
 import pickle
+import numpy as np
 from tqdm import tqdm
 from pathlib import Path
 from utils import load_pretrained_conv
@@ -34,8 +35,7 @@ def make_reduced_images():
     for image, _, _, _ in tqdm(loader):
         image = image.to(args.device)
         reduced_image = feature_extractor(image)
-        reduced_images.append(reduced_image)
-    # reduced_images = torch.cat(reduced_images, 0)
+        reduced_images.append(reduced_image.cpu())
     with open(os.path.join(args.data_directory, args.dataset, f'{mode}_reduced_images.pkl'), 'wb') as file:
         pickle.dump(reduced_images, file, protocol=pickle.HIGHEST_PROTOCOL)
     print(f'{mode}_reduced_images.pkl saved')
