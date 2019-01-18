@@ -37,11 +37,11 @@ def get_config():
     model_arg.add_argument('--san-layer', type=int, default=2)
     model_arg.add_argument('--san-k', type=int, default=640)
     # rn
-    model_arg.add_argument('--rn-gt-hidden', type=int, default=2)
-    model_arg.add_argument('--rn-gt-layer', type=int, default=2)
-    model_arg.add_argument('--rn-fp-hidden', type=int, default=2)
-    model_arg.add_argument('--rn-fp-layer', type=int, default=2)
-    model_arg.add_argument('--rn-fp-dropout', type=int, default=2)
+    model_arg.add_argument('--rn-gt-hidden', type=int, default=256)
+    model_arg.add_argument('--rn-gt-layer', type=int, default=4)
+    model_arg.add_argument('--rn-fp-hidden', type=int, default=256)
+    model_arg.add_argument('--rn-fp-layer', type=int, default=3)
+    model_arg.add_argument('--rn-fp-dropout', type=float, default=0.5)
 
     data_arg = parser.add_argument_group('Data')
     data_arg.add_argument('--data-directory', type=str, default=os.path.join(home,'data'), metavar='N', help='directory of data')
