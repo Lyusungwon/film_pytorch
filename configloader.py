@@ -7,11 +7,11 @@ def load_default_config(args):
         args.cv_stride = 2
         args.cv_layer = 4
         args.te_embedding = 2
+        args.te_hidden = 4096
         args.te_layer = 1
         args.film_res_kernel = 3
         args.film_res_layer = 4
         args.film_cf_filter = 51200
-        args.te_hidden = 4096
         args.film_fc_hidden = 1024
         args.film_fc_layer = 2
         args.input_h = 224
@@ -31,8 +31,6 @@ def load_default_config(args):
         print(f"Default config for {args.model} loaded.")
         return args
     elif args.model == 'rn':
-        args.input_h = 128
-        args.input_w = 128
         args.cv_filter = 24
         args.cv_kernel = 3
         args.cv_stride = 2
@@ -46,8 +44,10 @@ def load_default_config(args):
         args.rn_fp_hidden = 256
         args.rn_fp_layer = 3
         args.rn_fp_dropout = 0.5
-        args.learning_rate = 2.5e-4
+        args.input_h = 128
+        args.input_w = 128
         args.batch_size = 64
+        args.lr = 2.5e-4
         print(f"Default config for {args.model} loaded.")
         return args
     else:

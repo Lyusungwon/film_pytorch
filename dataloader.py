@@ -107,13 +107,10 @@ class Clevr(Dataset):
             return True
         else:
             print(f"Data {file} does not exist")
-            return False
+            return Falsew
 
     def load_data(self):
         print("Start loading {}".format(self.data_file))
-        if self.cv_pretrained:
-            self.images = h5py.File(self.img_dir, 'r', swmr=True)['images']
-        self.questions = h5py.File(self.question_file, 'r', swmr=True)['questions']
         with open(self.data_file, 'rb') as file:
             self.data = pickle.load(file)
 
@@ -121,6 +118,9 @@ class Clevr(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
+        if self.cv_pretrained:
+            self.images = h5py.File(self.img_dir, 'r', swmr=True)['images']
+        self.questions = h5py.File(self.question_file, 'r', swmr=True)['questions']
         img_file, a, q_t = self.data[idx]
         q = self.questions[idx]
         if not self.cv_pretrained:
