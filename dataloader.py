@@ -95,8 +95,9 @@ class Clevr(Dataset):
         # self.dict_file = os.path.join(data_dir, 'data_dict.pkl')
         if not self.is_file_exits(self.question_file):
             make_clevr_questions(data_dir)
-        if not self.is_file_exits(self.img_dir):
-            make_clevr_images(data_dir, size)
+        if cv_pretrained:
+            if not self.is_file_exits(self.img_dir):
+                make_clevr_images(data_dir, size)
         self.load_data()
 
     def is_file_exits(self, file):
