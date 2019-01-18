@@ -64,7 +64,7 @@ if __name__ == '__main__':
     writer = SummaryWriter(args.log)
     recorder = Recorder(writer, args, batch_record_idx)
     for epoch_idx in range(start_epoch, args.epochs):
-        # epoch(epoch_idx, is_train=True)
+        epoch(epoch_idx, is_train=True)
         epoch(epoch_idx, is_train=False)
         save_checkpoint(epoch_idx, model.module if args.multi_gpu else model, optimizer, args, recorder.batch_record_idx)
     writer.close()

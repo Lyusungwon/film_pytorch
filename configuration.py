@@ -77,11 +77,11 @@ def get_config():
         torch.cuda.set_device(args.device)
         args.device = torch.device(args.device)
 
-    args.data_config = [args.input_h, args.input_w, args.cpu_num, args.reduced_data]
+    args.data_config = [args.input_h, args.input_w, args.cpu_num, args.cv_pretrained]
 
     config_list = [args.project, args.model, args.dataset, args.epochs, args.batch_size, args.lr,
                    args.device, args.multi_gpu, args.gpu_num] + args.data_config + \
-                ['cv', args.cv_pretrained, args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
+                ['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
                  'te', args.te_pretrained, args.te_embedding, args.te_hidden, args.te_layer]
 
     if args.model == 'film':
