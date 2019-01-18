@@ -112,13 +112,10 @@ class Clevr(Dataset):
     def load_data(self):
         print("Start loading {}".format(self.data_file))
         if self.cv_pretrained:
-            self.images = h5py.File(self.img_dir, 'r')['images']
-            print(self.images.shape)
-        self.questions = h5py.File(self.question_file, 'r')['questions']
-        print(self.questions.shape)
+            self.images = h5py.File(self.img_dir, 'r', swmr=True)['images']
+        self.questions = h5py.File(self.question_file, 'r', swmr=True)['questions']
         with open(self.data_file, 'rb') as file:
             self.data = pickle.load(file)
-            print(len(self.data))
 
     def __len__(self):
         return len(self.data)
