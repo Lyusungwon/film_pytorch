@@ -7,6 +7,7 @@ class Film(nn.Module):
         super(Film, self).__init__()
         self.filters = args.cv_filter
         self.layers = args.film_res_layer
+        self.cv_pretrained = args.cv_pretrained
         if args.te_pretrained:
             pretrained_weight = load_pretrained_embedding(args.word2idx, args.te_embedding)
         else:
@@ -21,6 +22,8 @@ class Film(nn.Module):
         self.classifier = FilmClassifier(args.cv_filter, args.film_cf_filter, args.film_fc_hidden, args.a_size, args.film_fc_layer)
 
     def forward(self, image, question, question_length):
+        if not self.cv_pretrained:
+            image = image * 2 - 1
         x = self.visual_encoder(image)
         code = self.text_encoder(question, question_length)
         betagamma = self.fc(code).view(-1, self.layers, 2, self.filters)

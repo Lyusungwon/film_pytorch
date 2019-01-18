@@ -5,6 +5,7 @@ from utils import load_pretrained_embedding, load_pretrained_conv, rn_encode, lo
 class RelationalNetwork(nn.Module):
     def __init__(self, args):
         super(RelationalNetwork, self).__init__()
+        self.cv_pretrained = args.cv_pretrained
         if args.te_pretrained:
             pretrained_weight = load_pretrained_embedding(args.word2idx, args.te_embedding)
         else:
@@ -18,6 +19,8 @@ class RelationalNetwork(nn.Module):
         self.f_phi = MLP(args.rn_gt_hidden, args.rn_fp_hidden, args.a_size, args.rn_fp_layer, args.rn_fp_dropout)
 
     def forward(self, image, question, question_length):
+        if not self.cv_pretrained:
+            image = image * 2 - 1
         x = self.visual_encoder(image)
         code = self.text_encoder(question, question_length)
         pairs = rn_encode(x, code)

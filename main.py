@@ -45,7 +45,7 @@ def epoch(epoch_idx, is_train):
         question = question_set[0].to(device)
         question_length = question_set[1].to(device)
         answer = answer.to(device)
-        output = model(image * 2 - 1, question, question_length)
+        output = model(image, question, question_length)
         loss = F.cross_entropy(output, answer)
         if is_train:
             loss.backward()
