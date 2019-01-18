@@ -189,10 +189,9 @@ class VQA2(Dataset):
 
 
 if __name__ =='__main__':
-    dataloader = load_dataloader('sample', os.path.join(home, 'data'), True, 2, data_config=[224, 224, 0, False])
+    dataloader = load_dataloader('sample', os.path.join(home, 'data'), True, 2, data_config=[224, 224, 0, True])
     for img, q, a, types in dataloader:
         print(img.size())
         print(q)
         print(a)
         print(types)
-        break
