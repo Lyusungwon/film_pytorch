@@ -55,7 +55,7 @@ def epoch(epoch_idx, is_train):
         recorder.batch_end(loss, correct, types)
         if is_train and (batch_idx % args.log_interval == 0):
             recorder.log_batch(batch_idx, batch_size)
-    if not is_train:
+    if not is_train and not args.cv_pretrained:
         recorder.log_data(image.data, question.data, answer.data)
     recorder.log_epoch()
 
