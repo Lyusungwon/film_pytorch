@@ -22,8 +22,8 @@ def collate_clevr(list_inputs):
     answers = []
     question_types = []
     for i, q, a, q_type in list_inputs:
-        images.append(torch.from_numpy(i).unsqueeze(0))
-        questions.append(torch.from_numpy(q).to(torch.long))
+        images.append(i)
+        questions.append(q)
         q_length.append(len(q))
         answers.append(a)
         question_types.append(q_type)
@@ -63,7 +63,7 @@ def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_co
     if cv_pretrained:
         transform = transforms.Compose([transforms.ToTensor()])
     else:
-        transform = transforms.Compose([transforms.Resize((input_h, input_w))])
+        transform = transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])
     if data == 'clevr' or data == 'sample':
         dataloader = DataLoader(
             Clevr(os.path.join(data_directory, data), train=is_train, cv_pretrained=cv_pretrained,
@@ -126,11 +126,11 @@ class Clevr(Dataset):
         if not self.cv_pretrained:
             image = Image.open(os.path.join(self.img_dir, img_file)).convert('RGB')
             if self.transform:
-                image = self.transform(image)
-                image = np.array(image).transpose(2, 0, 1)
+                image = self.transform(image).unsqueeze(0)
         else:
-            image_idx = int(img_file.split('.')[0].split('_')[-1])
-            image = self.images[image_idx]
+            image = self.images[idx]
+            image = torch.from_numpy(image).unsqueeze(0)
+        q = torch.from_numpy(q).to(torch.long)
         return image, q, a, q_t
 
 
@@ -176,11 +176,14 @@ class VQA2(Dataset):
         image_idx, q, a, q_t, a_t = self.data[idx]
         if not self.reduced_data:
             image = Image.open(os.path.join(self.img_dir, 'COCO_{}2014_{}.jpg'.format(self.mode, str(image_idx).zfill(12)))).convert('RGB')
+            print(image.type())
             if self.transform:
                 image = self.transform(image)
             image = np.array(image)
         else:
             image = self.images[idx]
+            image = torch.from_numpy(image).unsqueeze(0)
+        q = torch.from_numpy(q).to(torch.long)
         return image, q, a, q_t, a_t
 
 
