@@ -82,7 +82,7 @@ def make_clevr_questions(data_dir):
         print('data_{}.pkl saved'.format(mode))
 
 
-def make_clevr_images(data_dir, size, batch_size=12):
+def make_clevr_images(data_dir, size, batch_size=128):
     print("Start making CLEVR image pickle")
     model = build_model()
     img_size = size
