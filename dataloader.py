@@ -21,7 +21,7 @@ def collate_clevr(list_inputs):
     question_types = []
     for i, q, a, q_type in list_inputs:
         images.append(torch.from_numpy(i).unsqueeze(0))
-        questions.append(torch.from_numpy(q))
+        questions.append(torch.from_numpy(q).to(torch.long))
         q_length.append(len(q))
         answers.append(a)
         question_types.append(q_type)
