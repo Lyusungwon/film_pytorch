@@ -13,7 +13,7 @@ class RelationalNetwork(nn.Module):
             pretrained_weight = None
         self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, pretrained_weight)
         if args.cv_pretrained:
-            self.visual_encoder = load_pretrained_conv(args.cv_filter)
+            self.visual_encoder = nn.Conv2d(1024, args.cv_filter, 1, 1)
         else:
             self.visual_encoder = Conv(args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm)
         self.g_theta = MLP((args.cv_filter + 2) * 2 + args.te_hidden, args.rn_gt_hidden, args.rn_gt_hidden, args.rn_gt_layer)
