@@ -9,6 +9,8 @@ from pathlib import Path
 from clevr_maker import make_clevr_images, make_clevr_questions
 from vqa2_maker import make_vqa2
 import h5py
+import numpy as np
+
 home = str(Path.home())
 
 
@@ -61,7 +63,7 @@ def load_dataloader(data, data_directory, is_train=True, batch_size=128, data_co
     if cv_pretrained:
         transform = transforms.Compose([transforms.ToTensor()])
     else:
-        transform = transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])
+        transform = transforms.Compose([transforms.Resize((input_h, input_w))])
     if data == 'clevr' or data == 'sample':
         dataloader = DataLoader(
             Clevr(os.path.join(data_directory, data), train=is_train, cv_pretrained=cv_pretrained,
@@ -85,7 +87,6 @@ class Clevr(Dataset):
         self.mode = 'train' if train else 'val'
         self.cv_pretrained = cv_pretrained
         self.transform = transform
-        self.cv_pretrained = cv_pretrained
         if self.cv_pretrained:
             self.img_dir = os.path.join(data_dir, f'images_{self.mode}_{str(size[0])}.h5')
         else:
@@ -133,6 +134,7 @@ class Clevr(Dataset):
             image = Image.open(os.path.join(self.img_dir, img_file)).convert('RGB')
             if self.transform:
                 image = self.transform(image)
+                image = np.array(image)
         else:
             image_idx = int(img_file.split('.')[0].split('_')[-1])
             image = self.images[image_idx]
@@ -183,13 +185,14 @@ class VQA2(Dataset):
             image = Image.open(os.path.join(self.img_dir, 'COCO_{}2014_{}.jpg'.format(self.mode, str(image_idx).zfill(12)))).convert('RGB')
             if self.transform:
                 image = self.transform(image)
+            image = np.array(image)
         else:
             image = self.images[idx]
         return image, q, a, q_t, a_t
 
 
 if __name__ =='__main__':
-    dataloader = load_dataloader('sample', os.path.join(home, 'data'), True, 2, data_config=[224, 224, 0, True])
+    dataloader = load_dataloader('sample', os.path.join(home, 'data'), True, 2, data_config=[224, 224, 0, False])
     for img, q, a, types in dataloader:
         print(img.size())
         print(q)
