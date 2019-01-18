@@ -114,15 +114,8 @@ class Clevr(Dataset):
         if self.cv_pretrained:
             self.images = h5py.File(self.img_dir, 'r')['images']
         self.questions = h5py.File(self.question_file, 'r')['questions']
-        # self.answers = h5py.File(self.data_file, 'r')['answers']
-        # self.question_types = h5py.File(self.data_file, 'r')['question_types']
         with open(self.data_file, 'rb') as file:
             self.data = pickle.load(file)
-        # if self.reduced_data:
-        #     if not self.is_file_exits(self.img_dir):
-        #         raise
-        #     with open(self.img_dir, 'rb') as file:
-        #         self.images = pickle.load(file)
 
     def __len__(self):
         return len(self.data)
@@ -134,7 +127,7 @@ class Clevr(Dataset):
             image = Image.open(os.path.join(self.img_dir, img_file)).convert('RGB')
             if self.transform:
                 image = self.transform(image)
-                image = np.array(image)
+                image = np.array(image).transpose(2, 0, 1)
         else:
             image_idx = int(img_file.split('.')[0].split('_')[-1])
             image = self.images[image_idx]

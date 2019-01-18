@@ -5,8 +5,6 @@ from utils import load_pretrained_embedding, load_pretrained_conv, rn_encode, lo
 class RelationalNetwork(nn.Module):
     def __init__(self, args):
         super(RelationalNetwork, self).__init__()
-        # self.filters = args.cv_filter
-        # self.layers = args.film_res_layer
         if args.te_pretrained:
             pretrained_weight = load_pretrained_embedding(args.word2idx, args.te_embedding)
         else:
