@@ -128,7 +128,8 @@ class Clevr(Dataset):
             if self.transform:
                 image = self.transform(image).unsqueeze(0)
         else:
-            image = self.images[idx]
+            image_idx = int(img_file.split('.')[0].split('_')[-1])
+            image = self.images[image_idx]
             image = torch.from_numpy(image).unsqueeze(0)
         q = torch.from_numpy(q).to(torch.long)
         return image, q, a, q_t
