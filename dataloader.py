@@ -85,7 +85,7 @@ class VQA(Dataset):
         print("Start loading {}".format(self.data_file))
         with open(self.data_file, 'rb') as file:
             self.data = pickle.load(file)
-        if self.reduced_data:
+        if self.cv_pretrained:
             if not self.is_file_exits(self.img_dir):
                 raise
             with open(self.img_dir, 'rb') as file:
@@ -115,7 +115,7 @@ class VQA(Dataset):
 
 
 if __name__ =='__main__':
-    dataloader = load_dataloader(os.path.join(home, 'data'), 'vqa2', True, 2, data_config=[224, 224, 0, True])
+    dataloader = load_dataloader(os.path.join(home, 'data'), 'sample', True, 2, data_config=[224, 224, 0, True])
     for img, q, a, types in dataloader:
         print(img.size())
         print(q)
