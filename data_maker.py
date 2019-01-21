@@ -107,7 +107,7 @@ def make_questions(data_dir, dataset):
         print('data_{}.pkl saved'.format(mode))
 
 
-def make_images(data_dir, dataset, size, batch_size=128, max_images=1000):
+def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
     print(f"Start making {dataset} image pickle")
     model_name = 'resnet152' if dataset == 'vqa2' else 'resnet101'
     image_type = 'jpg' if dataset == 'vqa2' else 'png'
@@ -207,7 +207,7 @@ def run_batch(cur_batch, model, dataset):
 if __name__ =='__main__':
     data_directory = os.path.join(home, 'data')
     make_questions(data_directory, 'vqa2')
-    make_images(data_directory, 'vqa2', (448, 448), 5)
+    make_images(data_directory, 'vqa2', (448, 448), 5, 100)
     # make_questions(data_directory, 'sample')
     # make_images(data_directory, 'sample', (224, 224), 5, 100)
 

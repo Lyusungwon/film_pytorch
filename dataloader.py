@@ -57,20 +57,20 @@ class VQA(Dataset):
         self.mode = 'train' if train else 'val'
         self.cv_pretrained = cv_pretrained
         self.transform = transform
-        self.data_file = os.path.join(data_dir, 'data_{}.pkl'.format(self.mode))
-        self.question_file = os.path.join(data_dir, f'questions_{self.mode}.h5')
+        self.data_file = os.path.join(data_dir, dataset, 'data_{}.pkl'.format(self.mode))
+        self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}.h5')
         if self.cv_pretrained:
-            self.img_dir = os.path.join(data_dir, f'images_{self.mode}_{str(size[0])}.h5')
+            self.img_dir = os.path.join(data_dir, dataset, f'images_{self.mode}_{str(size[0])}.h5')
         else:
             if dataset == 'clevr':
-                self.img_dir = os.path.join(data_dir, 'images', f'{self.mode}')
+                self.img_dir = os.path.join(data_dir, dataset, 'images', f'{self.mode}')
             elif dataset == 'vqa2':
-                self.img_dir = os.path.join(data_dir, f'{self.mode}2014')
+                self.img_dir = os.path.join(data_dir, dataset, f'{self.mode}2014')
         if not self.is_file_exits(self.question_file):
             make_questions(data_dir, dataset)
         if cv_pretrained:
             if not self.is_file_exits(self.img_dir):
-                self.idx_dict = make_images(data_dir, dataset, size, 5)
+                self.idx_dict = make_images(data_dir, dataset, size, 5, 1000)
         self.load_data()
 
     def is_file_exits(self, file):
@@ -115,7 +115,7 @@ class VQA(Dataset):
 
 
 if __name__ =='__main__':
-    dataloader = load_dataloader(os.path.join(home, 'data'), 'sample', True, 2, data_config=[224, 224, 0, True])
+    dataloader = load_dataloader(os.path.join(home, 'data'), 'vqa2', True, 2, data_config=[224, 224, 0, True])
     for img, q, a, types in dataloader:
         print(img.size())
         print(q)
