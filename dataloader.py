@@ -98,7 +98,7 @@ class VQA(Dataset):
         image_dir, image_id, a, q_t = self.data[idx]
         q = self.questions[idx]
         if not self.cv_pretrained:
-            image = Image.open(os.path.join(image_dir, img_file)).convert('RGB')
+            image = Image.open(os.path.join(image_dir, image_dir)).convert('RGB')
             if self.transform:
                 image = self.transform(image).unsqueeze(0)
         else:
