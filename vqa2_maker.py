@@ -56,17 +56,12 @@ def make_vqa2(data_dir):
     for question_type in sorted(list(question_types)):
         question_type_to_idx[question_type] = len(question_type_to_idx)
         idx_to_question_type[len(idx_to_question_type)] = question_type
-    # for answer_type in sorted(list(answer_types)):
-    #     answer_type_to_idx[answer_type] = len(answer_type_to_idx)
-        # idx_to_answer_type[len(idx_to_answer_type)] = answer_type
     data_dict = {'word_to_idx': word_to_idx,
                  'idx_to_word': idx_to_word,
                  'answer_word_to_idx': answer_word_to_idx,
                  'answer_idx_to_word': answer_idx_to_word,
                  'question_type_to_idx': question_type_to_idx,
                  'idx_to_question_type': idx_to_question_type
-                 # 'answer_type_to_idx': answer_type_to_idx,
-                 # 'idx_to_answer_type': idx_to_answer_type
                  }
     with open(os.path.join(data_dir, 'data_dict.pkl'), 'wb') as file:
         pickle.dump(data_dict, file, protocol=pickle.HIGHEST_PROTOCOL)

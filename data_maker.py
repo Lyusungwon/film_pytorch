@@ -107,7 +107,7 @@ def make_questions(data_dir, dataset):
         print('data_{}.pkl saved'.format(mode))
 
 
-def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
+def make_images(data_dir, dataset, size, batch_size=128, max_images=1000):
     print(f"Start making {dataset} image pickle")
     model_name = 'resnet152' if dataset == 'vqa2' else 'resnet101'
     image_type = 'jpg' if dataset == 'vqa2' else 'png'
@@ -124,10 +124,8 @@ def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
         for n, fn in enumerate(sorted(os.listdir(input_image_dir))):
             if not fn.endswith(image_type): continue
             idx = int(os.path.splitext(fn)[0].split('_')[-1])
-            # if dataset != 'clevr':
             idx_dict[f'{mode}'][idx] = n
-            idx = n
-            input_paths.append((os.path.join(input_image_dir, fn), idx))
+            input_paths.append((os.path.join(input_image_dir, fn), n))
             idx_set.add(idx)
         input_paths.sort(key=lambda x: x[1])
         assert len(idx_set) == len(input_paths)
@@ -209,7 +207,7 @@ def run_batch(cur_batch, model, dataset):
 if __name__ =='__main__':
     data_directory = os.path.join(home, 'data')
     make_questions(data_directory, 'vqa2')
-    make_images(data_directory, 'vqa2', (448, 448), 64, 100)
+    make_images(data_directory, 'vqa2', (448, 448), 64)
     # make_questions(data_directory, 'sample')
     # make_images(data_directory, 'sample', (224, 224), 5, 100)
 
