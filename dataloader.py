@@ -89,7 +89,7 @@ class VQA(Dataset):
         if self.cv_pretrained:
             print(f"Start loading {self.idx_dict_file}")
             with open(self.idx_dict_file, 'rb') as file:
-                self.idx_dict = pickle.load(file)
+                self.idx_dict = pickle.load(file)[self.mode]
 
     def __len__(self):
         return len(self.data)
