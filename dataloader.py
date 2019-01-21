@@ -51,7 +51,7 @@ def load_dataloader(data_directory, dataset, is_train=True, batch_size=128, data
 
 
 class VQA(Dataset):
-    """Clevr dataset."""
+    """VQA dataset."""
     def __init__(self, data_dir, dataset, train=True, cv_pretrained=True, transform=None, size=(224,224)):
         self.dataset = dataset
         self.mode = 'train' if train else 'val'
@@ -62,7 +62,10 @@ class VQA(Dataset):
         if self.cv_pretrained:
             self.img_dir = os.path.join(data_dir, f'images_{self.mode}_{str(size[0])}.h5')
         else:
-            self.img_dir = os.path.join(data_dir, 'images', f'{self.mode}')
+            if dataset == 'clevr':
+                self.img_dir = os.path.join(data_dir, 'images', f'{self.mode}')
+            elif dataset == 'vqa2':
+                self.img_dir = os.path.join(data_dir, f'{self.mode}2014')
         if not self.is_file_exits(self.question_file):
             make_questions(data_dir, dataset)
         if cv_pretrained:
