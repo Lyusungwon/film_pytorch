@@ -109,7 +109,7 @@ def make_questions(data_dir, dataset):
         print('data_{}.pkl saved'.format(mode))
 
 
-def make_images(data_dir, dataset, size, batch_size=128):
+def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
     print(f"Start making {dataset} image pickle")
     model_name = 'resnet152' if dataset == 'vqa2' else 'resnet101'
     image_type = 'jpg' if dataset == 'vqa2' else 'png'
@@ -135,8 +135,8 @@ def make_images(data_dir, dataset, size, batch_size=128):
         input_paths.sort(key=lambda x: x[1])
         assert len(idx_set) == len(input_paths)
         assert min(idx_set) == 0 and max(idx_set) == len(idx_set) - 1
-        # if args.max_images is not None:
-        #     input_paths = input_paths[:args.max_images]
+        if max_images is not None:
+            input_paths = input_paths[:max_images]
         print(input_paths[0])
         print(input_paths[-1])
         with h5py.File(os.path.join(data_dir, dataset, f'images_{mode}_{str(size[0])}.h5'), 'w') as f:
@@ -155,6 +155,7 @@ def make_images(data_dir, dataset, size, batch_size=128):
                         _, C, H, W = feats.shape
                         feat_dset = f.create_dataset('images', (N, C, H, W),
                                                      dtype=np.float32)
+                        print(N, C, H, W)
                     i1 = i0 + len(cur_batch)
                     feat_dset[i0:i1] = feats
                     i0 = i1
@@ -211,7 +212,7 @@ def run_batch(cur_batch, model, dataset):
 
 if __name__ =='__main__':
     data_directory = os.path.join(home, 'data')
-    make_images(data_directory, 'vqa2', (448, 448), 64)
+    make_images(data_directory, 'vqa2', (448, 448), 64, 100])
 
 # question_type_dict = {'exist': 10,
 #                     'count': 20,
