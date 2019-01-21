@@ -57,10 +57,11 @@ class Recorder:
         self.batch_start_time = time.time()
 
     def record_types(self, correct, types):
+        b, t = types.size()
         correct = correct.cpu()
-        for question_type in types:
+        for n in range(t):
             for i in range(self.qt_size):
-                idx = question_type == i
+                idx = types[:, n] == i
                 self.per_question["correct"][i] += (correct * idx).sum().item()
                 self.per_question["number"][i] += idx.sum().item()
 
@@ -78,7 +79,6 @@ class Recorder:
         self.writer.add_scalar('{}-4.Batch loss'.format(self.mode), self.batch_loss / batch_size, self.batch_record_idx)
         self.writer.add_scalar('{}-5.Batch accuracy'.format(self.mode), self.batch_correct / batch_size, self.batch_record_idx)
         self.writer.add_scalar('{}-6.Batch time'.format(self.mode), self.batch_time, self.batch_record_idx)
-
         self.batch_record_idx += 1
 
     def log_epoch(self, idx_to_question_type=None):
