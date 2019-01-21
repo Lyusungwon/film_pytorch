@@ -57,17 +57,17 @@ class VQA(Dataset):
         self.data_file = os.path.join(data_dir, dataset, f'data_{self.mode}.pkl')
         self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}.h5')
         if self.cv_pretrained:
-            self.img_dir = os.path.join(data_dir, dataset, f'images_{self.mode}_{str(size[0])}.h5')
+            self.image_dir = os.path.join(data_dir, dataset, f'images_{self.mode}_{str(size[0])}.h5')
             self.idx_dict_file = os.path.join(data_dir, dataset, 'idx_dict.pkl')
         else:
             if dataset == 'clevr':
-                self.img_dir = os.path.join(data_dir, dataset, 'images', f'{self.mode}')
+                self.image_dir = os.path.join(data_dir, dataset, 'images', f'{self.mode}')
             elif dataset == 'vqa2':
-                self.img_dir = os.path.join(data_dir, dataset, f'{self.mode}2014')
+                self.image_dir = os.path.join(data_dir, dataset, f'{self.mode}2014')
         if not self.is_file_exits(self.question_file):
             make_questions(data_dir, dataset)
         if cv_pretrained:
-            if not self.is_file_exits(self.img_dir):
+            if not self.is_file_exits(self.image_dir):
                 make_images(data_dir, dataset, size)
         self.load_data()
 
@@ -92,18 +92,16 @@ class VQA(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        if self.cv_pretrained:
-            self.images = h5py.File(self.img_dir, 'r', swmr=True)['images']
         self.questions = h5py.File(self.question_file, 'r', swmr=True)['questions']
-        image_dir, image_id, a, q_t = self.data[idx]
+        image_file, image_id, a, q_t = self.data[idx]
         q = self.questions[idx]
-        if not self.cv_pretrained:
-            image = Image.open(os.path.join(image_dir, image_dir)).convert('RGB')
+        if self.cv_pretrained:
+            image = h5py.File(self.image_dir, 'r', swmr=True)['images'][self.idx_dict[image_id]]
+            image = torch.from_numpy(image).unsqueeze(0)
+        else:
+            image = Image.open(os.path.join(self.image_dir, image_file)).convert('RGB')
             if self.transform:
                 image = self.transform(image).unsqueeze(0)
-        else:
-            image = self.images[self.idx_dict[image_id]]
-            image = torch.from_numpy(image).unsqueeze(0)
         q = torch.from_numpy(q).to(torch.long)
         a = torch.Tensor([a]).to(torch.long)
         q_t = torch.Tensor([q_t]).to(torch.long)
