@@ -85,11 +85,6 @@ class VQA(Dataset):
         print("Start loading {}".format(self.data_file))
         with open(self.data_file, 'rb') as file:
             self.data = pickle.load(file)
-        if self.cv_pretrained:
-            if not self.is_file_exits(self.img_dir):
-                raise
-            with open(self.img_dir, 'rb') as file:
-                self.images = pickle.load(file)
 
     def __len__(self):
         return len(self.data)
