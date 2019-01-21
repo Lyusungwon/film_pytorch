@@ -11,7 +11,8 @@ from scipy.misc import imread, imresize
 
 home = str(Path.home())
 
-modes = ['train', 'val']
+# modes = ['train', 'val']
+modes = ['val']
 
 
 def make_questions(data_dir, dataset):
@@ -210,7 +211,7 @@ def run_batch(cur_batch, model, dataset):
 
 if __name__ =='__main__':
     data_directory = os.path.join(home, 'data')
-    make_images(data_directory, 'vqa2',(448, 448), 64)
+    make_images(data_directory, 'vqa2', (448, 448), 64)
 
 # question_type_dict = {'exist': 10,
 #                     'count': 20,

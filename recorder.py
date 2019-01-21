@@ -92,7 +92,7 @@ class Recorder:
             self.epoch_loss / self.dataset_size,
             self.epoch_time,
             self.epoch_correct / self.dataset_size))
-        wandb.log({f"{self.mode} epoch loss": self.epoch_loss / dataset_size,
+        wandb.log({f"{self.mode} epoch loss": self.epoch_loss / self.dataset_size,
                    f"{self.mode} epoch accuracy": self.epoch_correct / self.dataset_size,
                    f"{self.mode} epoch time": self.epoch_time})
         self.writer.add_scalar('{}-1.Total loss'.format(self.mode), self.epoch_loss / self.dataset_size, self.epoch_idx)

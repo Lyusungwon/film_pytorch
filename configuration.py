@@ -11,8 +11,8 @@ def get_config():
     parser = argparse.ArgumentParser(description='parser')
 
     model_arg = parser.add_argument_group('Model')
-    model_arg.add_argument('--project', type=str, default='vqa')
-    model_arg.add_argument('--model', type=str, default='film')
+    model_arg.add_argument('--project', type=str, default='sample')
+    model_arg.add_argument('--model', type=str, default='rn')
     # Load configuration of the paper
     model_arg.add_argument('--load-default', action='store_true')
     # Convolution

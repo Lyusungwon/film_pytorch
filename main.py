@@ -1,7 +1,6 @@
 import torch.optim as optim
 import torch.nn.functional as F
 from tensorboardX import SummaryWriter
-from torchsummary import summary
 from utils import *
 from configuration import get_config
 from recorder import Recorder
@@ -37,7 +36,6 @@ if args.load_model:
 if args.multi_gpu:
     model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
 model = model.to(device)
-summary(model, [(3, args.input_h, args.input_w), (10), (1)])
 wandb.watch(model)
 
 
