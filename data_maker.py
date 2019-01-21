@@ -117,7 +117,7 @@ def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
     img_size = size
     idx_dict = dict()
     for mode in modes:
-        img_dir = f'images/{mode}' if dataset == 'vqa2' else f'{mode}2014'
+        img_dir = f'{mode}2014' if dataset == 'vqa2' else f'images/{mode}'
         input_paths = []
         idx_set = set()
         input_image_dir = os.path.join(data_dir, dataset, img_dir)
