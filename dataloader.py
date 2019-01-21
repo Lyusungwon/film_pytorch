@@ -61,7 +61,7 @@ class VQA(Dataset):
         self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}.h5')
         if self.cv_pretrained:
             self.img_dir = os.path.join(data_dir, dataset, f'images_{self.mode}_{str(size[0])}.h5')
-            self.idx_dict_file = os.path.join(data_dir, dataset, f'idx_dict_{mode}.pkl')
+            self.idx_dict_file = os.path.join(data_dir, dataset, f'idx_dict_{self.mode}.pkl')
         else:
             if dataset == 'clevr':
                 self.img_dir = os.path.join(data_dir, dataset, 'images', f'{self.mode}')
