@@ -102,7 +102,7 @@ def make_questions(data_dir, dataset):
                 q_dset[n] = q
                 a = answer_word_to_idx[answer_word]
                 q_t = [question_type_to_idx[type] for type in types]
-                qa_idx_data[mode].append((image_idS, a, q_t))
+                qa_idx_data[mode].append((image_id, a, q_t))
         with open(os.path.join(data_dir, dataset, 'data_{}.pkl'.format(mode)), 'wb') as file:
             pickle.dump(qa_idx_data[mode], file, protocol=pickle.HIGHEST_PROTOCOL)
         print('data_{}.pkl saved'.format(mode))
