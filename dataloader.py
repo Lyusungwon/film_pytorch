@@ -98,15 +98,14 @@ class VQA(Dataset):
         if self.cv_pretrained:
             self.images = h5py.File(self.img_dir, 'r', swmr=True)['images']
         self.questions = h5py.File(self.question_file, 'r', swmr=True)['questions']
-        img_file, a, q_t = self.data[idx]
+        image_id, a, q_t = self.data[idx]
         q = self.questions[idx]
         if not self.cv_pretrained:
             image = Image.open(os.path.join(self.img_dir, img_file)).convert('RGB')
             if self.transform:
                 image = self.transform(image).unsqueeze(0)
         else:
-            image_idx = int(img_file.split('.')[0].split('_')[-1])
-            image = self.images[self.idx_dict[image_idx]]
+            image = self.images[self.idx_dict[image_id]]
             image = torch.from_numpy(image).unsqueeze(0)
         q = torch.from_numpy(q).to(torch.long)
         a = torch.Tensor([a]).to(torch.long)
@@ -123,6 +122,7 @@ if __name__ =='__main__':
         print(q)
         print(a.size())
         print(types.size())
+        break
     #
     # if data == 'clevr' or data == 'sample':
     #     dataloader = DataLoader(

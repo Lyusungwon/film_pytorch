@@ -27,6 +27,7 @@ def make_questions(data_dir, dataset):
                 questions = json.load(f)['questions']
             for question in questions:
                 img_f = question['image_filename']
+                image_id = int(img_f.split('.')[0].split('_')[-1])
                 q_text = question['question'].lower()
                 q_words = re.sub('[^;A-Za-z ]+', "", q_text).split(' ')
                 q_corpus.update(q_words)
@@ -34,7 +35,7 @@ def make_questions(data_dir, dataset):
                 a_corpus.add(a_text)
                 q_type = question['program'][-1][query]
                 qt_corpus.add(q_type)
-                qa_list[mode].append((img_f, q_words, a_text, [q_type]))
+                qa_list[mode].append((image_id, q_words, a_text, [q_type]))
         elif dataset == 'vqa2':
             question_list = {}
             question_file = os.path.join(data_dir, dataset, 'v2_OpenEnded_mscoco_{}2014_questions.json'.format(mode))
@@ -91,7 +92,7 @@ def make_questions(data_dir, dataset):
     for mode in modes:
         with h5py.File(os.path.join(data_dir, dataset, f'questions_{mode}.h5'), 'w') as f:
             q_dset = None
-            for n, (img_file, q_word_list, answer_word, types) in enumerate(qa_list[mode]):
+            for n, (image_id, q_word_list, answer_word, types) in enumerate(qa_list[mode]):
                 if q_dset is None:
                     N = len(qa_list[mode])
                     dt = h5py.special_dtype(vlen=np.dtype('int32'))
@@ -101,7 +102,7 @@ def make_questions(data_dir, dataset):
                 q_dset[n] = q
                 a = answer_word_to_idx[answer_word]
                 q_t = [question_type_to_idx[type] for type in types]
-                qa_idx_data[mode].append((img_file, a, q_t))
+                qa_idx_data[mode].append((image_idS, a, q_t))
         with open(os.path.join(data_dir, dataset, 'data_{}.pkl'.format(mode)), 'wb') as file:
             pickle.dump(qa_idx_data[mode], file, protocol=pickle.HIGHEST_PROTOCOL)
         print('data_{}.pkl saved'.format(mode))
@@ -111,7 +112,7 @@ def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
     print(f"Start making {dataset} image pickle")
     model_name = 'resnet152' if dataset == 'vqa2' else 'resnet101'
     image_type = 'jpg' if dataset == 'vqa2' else 'png'
-    stage = 4 if dataset == 'vqa2' else 3
+    stage = 3
     model = build_model(model_name, stage)
     img_size = size
     idx_dict = dict()
