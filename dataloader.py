@@ -57,10 +57,11 @@ class VQA(Dataset):
         self.mode = 'train' if train else 'val'
         self.cv_pretrained = cv_pretrained
         self.transform = transform
-        self.data_file = os.path.join(data_dir, dataset, 'data_{}.pkl'.format(self.mode))
+        self.data_file = os.path.join(data_dir, dataset, f'data_{self.mode}.pkl')
         self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}.h5')
         if self.cv_pretrained:
             self.img_dir = os.path.join(data_dir, dataset, f'images_{self.mode}_{str(size[0])}.h5')
+            self.idx_dict_file = os.path.join(data_dir, dataset, f'idx_dict_{mode}.pkl')
         else:
             if dataset == 'clevr':
                 self.img_dir = os.path.join(data_dir, dataset, 'images', f'{self.mode}')
@@ -70,7 +71,7 @@ class VQA(Dataset):
             make_questions(data_dir, dataset)
         if cv_pretrained:
             if not self.is_file_exits(self.img_dir):
-                self.idx_dict = make_images(data_dir, dataset, size, 5, 1000)
+                make_images(data_dir, dataset, size, 5, 1000)
         self.load_data()
 
     def is_file_exits(self, file):
@@ -82,9 +83,14 @@ class VQA(Dataset):
             return False
 
     def load_data(self):
-        print("Start loading {}".format(self.data_file))
+        print(f"Start loading {self.data_file}")
         with open(self.data_file, 'rb') as file:
             self.data = pickle.load(file)
+        if self.cv_pretrained:
+            print(f"Start loading {self.idx_dict_file}")
+            with open(self.idx_dict_file, 'rb') as file:
+                self.idx_dict = pickle.load(file)
+
 
     def __len__(self):
         return len(self.data)
