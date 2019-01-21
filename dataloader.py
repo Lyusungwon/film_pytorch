@@ -61,7 +61,7 @@ class VQA(Dataset):
         self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}.h5')
         if self.cv_pretrained:
             self.img_dir = os.path.join(data_dir, dataset, f'images_{self.mode}_{str(size[0])}.h5')
-            self.idx_dict_file = os.path.join(data_dir, dataset, f'idx_dict_{self.mode}.pkl')
+            self.idx_dict_file = os.path.join(data_dir, dataset, 'idx_dict.pkl')
         else:
             if dataset == 'clevr':
                 self.img_dir = os.path.join(data_dir, dataset, 'images', f'{self.mode}')
@@ -106,10 +106,11 @@ class VQA(Dataset):
                 image = self.transform(image).unsqueeze(0)
         else:
             image_idx = int(img_file.split('.')[0].split('_')[-1])
-            print(self.idx_dict[image_idx])
             image = self.images[self.idx_dict[image_idx]]
             image = torch.from_numpy(image).unsqueeze(0)
         q = torch.from_numpy(q).to(torch.long)
+        a = torch.Tensor([a]).to(torch.long)
+        q_t = torch.Tensor([q_t]).to(torch.long)
         return image, q, a, q_t
 
 
@@ -120,8 +121,8 @@ if __name__ =='__main__':
     for img, q, a, types in dataloader:
         print(img.size())
         print(q)
-        print(a)
-        print(types)
+        print(a.size())
+        print(types.size())
     #
     # if data == 'clevr' or data == 'sample':
     #     dataloader = DataLoader(

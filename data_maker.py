@@ -114,8 +114,8 @@ def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
     stage = 4 if dataset == 'vqa2' else 3
     model = build_model(model_name, stage)
     img_size = size
+    idx_dict = dict()
     for mode in modes:
-        idx_dict = dict()
         img_dir = f'{mode}2014' if dataset == 'vqa2' else f'images/{mode}'
         input_paths = []
         idx_set = set()
@@ -162,9 +162,9 @@ def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
                 feat_dset[i0:i1] = feats
                 print('Processed %d / %d images' % (i1, len(input_paths)))
         print(f"images saved in {os.path.join(data_dir, dataset, f'image_{mode}_{str(size[0])}.h5')}")
-        with open(os.path.join(data_dir, dataset, f'idx_dict.pkl'), 'wb') as file:
+        with open(os.path.join(data_dir, dataset, 'idx_dict.pkl'), 'wb') as file:
             pickle.dump(idx_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
-        print(f'idx_dict.pkl saved')
+        print('idx_dict.pkl saved')
 
 def build_model(model, stage=4):
     import torchvision.models
