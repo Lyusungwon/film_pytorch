@@ -74,9 +74,9 @@ def make_questions(data_dir, dataset):
     for question_type in sorted(list(qt_corpus)):
         question_type_to_idx[question_type] = len(question_type_to_idx)
         idx_to_question_type[len(idx_to_question_type)] = question_type
-    print(f"The number of questions {len(q_corpus)}")
-    print(f"The number of answers {len(a_corpus)}")
-    print(f"The number of question types {len(qt_corpus)}")
+    print(f"The number of question corpus: {len(q_corpus)}")
+    print(f"The number of answers corpus: {len(a_corpus)}")
+    print(f"The number of question types corpus: {len(qt_corpus)}")
     data_dict = {'word_to_idx': word_to_idx,
                  'idx_to_word': idx_to_word,
                  'answer_word_to_idx': answer_word_to_idx,
@@ -208,8 +208,8 @@ def run_batch(cur_batch, model, dataset):
 
 if __name__ =='__main__':
     data_directory = os.path.join(home, 'data')
-    make_questions(data_directory, 'vqa2')
-    make_images(data_directory, 'vqa2', (448, 448), 5, 100)
+    make_questions(data_directory, 'sample')
+    make_images(data_directory, 'sample', (448, 448), 5, 100)
     # make_questions(data_directory, 'sample')
     # make_images(data_directory, 'sample', (224, 224), 5, 100)
 

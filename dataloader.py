@@ -71,7 +71,7 @@ class VQA(Dataset):
             make_questions(data_dir, dataset)
         if cv_pretrained:
             if not self.is_file_exits(self.img_dir):
-                make_images(data_dir, dataset, size, 5, 1000)
+                make_images(data_dir, dataset, size)
         self.load_data()
 
     def is_file_exits(self, file):
@@ -90,7 +90,6 @@ class VQA(Dataset):
             print(f"Start loading {self.idx_dict_file}")
             with open(self.idx_dict_file, 'rb') as file:
                 self.idx_dict = pickle.load(file)[self.mode]
-                print(self.idx_dict)
 
     def __len__(self):
         return len(self.data)
@@ -114,10 +113,8 @@ class VQA(Dataset):
         return image, q, a, q_t
 
 
-
-
 if __name__ =='__main__':
-    dataloader = load_dataloader(os.path.join(home, 'data'), 'clevr', True, 2, data_config=[224, 224, 0, True])
+    dataloader = load_dataloader(os.path.join(home, 'data'), 'sample', True, 2, data_config=[224, 224, 0, True])
     for img, q, a, types in dataloader:
         print(img.size())
         print(q)
