@@ -1,5 +1,5 @@
 from layers import *
-from utils import load_pretrained_embedding, load_pretrained_conv, rn_encode, lower_sum
+from utils import load_pretrained_embedding, rn_encode, lower_sum
 
 
 class RelationalNetwork(nn.Module):
