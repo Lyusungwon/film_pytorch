@@ -15,8 +15,8 @@ wandb.init(args.project)
 device = args.device
 torch.manual_seed(args.seed)
 
-train_loader = dataloader.load_dataloader(args.dataset, args.data_directory, True, args.batch_size, args.data_config)
-test_loader = dataloader.load_dataloader(args.dataset, args.data_directory, False, args.batch_size, args.data_config)
+train_loader = dataloader.load_dataloader(args.data_directory, args.dataset, True, args.batch_size, args.data_config)
+test_loader = dataloader.load_dataloader(args.data_directory, args.dataset, False, args.batch_size, args.data_config)
 args = load_dict(args)
 start_epoch = 0
 batch_record_idx = 0
