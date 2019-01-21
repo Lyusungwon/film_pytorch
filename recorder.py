@@ -74,7 +74,7 @@ class Recorder:
             self.batch_loss / batch_size,
             self.batch_time,
             self.batch_correct / batch_size))
-        if self.args.wandb:
+        if self.wandb:
             wandb.log({f"{self.mode} batch loss": self.batch_loss / batch_size,
                        f"{self.mode} batch accuracy": self.batch_correct / batch_size,
                        f"{self.mode} batch time": self.batch_time})
@@ -105,7 +105,7 @@ class Recorder:
             type_accuracy = self.per_question_type['correct'][question_type_name] / self.per_question_type['number'][question_type_name]
             per_question_log[f"{self.mode} question {question_type_name} accuracy"] = type_accuracy
             self.writer.add_scalar("{}-7. Question '{}' accuracy".format(self.mode, question_type_name), type_accuracy, self.epoch_idx)
-        if self.args.wandb:
+        if self.wandb:
             wandb.log({f"{self.mode} epoch loss": self.epoch_loss / self.dataset_size,
                        f"{self.mode} epoch accuracy": self.epoch_correct / self.dataset_size,
                        f"{self.mode} epoch time": self.epoch_time})
