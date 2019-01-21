@@ -107,7 +107,7 @@ class Clevr(Dataset):
             return True
         else:
             print(f"Data {file} does not exist")
-            return Falsew
+            return False
 
     def load_data(self):
         print("Start loading {}".format(self.data_file))

@@ -25,13 +25,12 @@ class Conv(nn.Module):
         prev_filter = 3
         net = nn.ModuleList([])
         for _ in range(layer):
-            net.append(nn.Conv2d(prev_filter, filter, kernel, stride, (kernel - 1)//2))
+            net.append(nn.Conv2d(prev_filter, filter, kernel, stride, (kernel - 1)//2, bias=not batchnorm))
             if batchnorm:
                 net.append(nn.BatchNorm2d(filter))
             net.append(nn.ReLU(inplace=True))
             prev_filter = filter
         self.net = nn.Sequential(*net)
-        print(self.net)
 
     def forward(self, x):
         x = self.net(x)
@@ -51,7 +50,6 @@ class MLP(nn.Module):
                 net.append(nn.Dropout(dropout))
         net = nn.ModuleList(net[:-1])
         self.net = nn.Sequential(*net)
-        print(self.net)
 
     def forward(self, x):
         x = self.net(x)

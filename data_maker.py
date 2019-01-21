@@ -160,7 +160,7 @@ def make_images(data_dir, dataset, size, batch_size=128):
                     print('Processed %d / %d images' % (i1, len(input_paths)))
                     cur_batch = []
             if len(cur_batch) > 0:
-                feats = run_batch(cur_batch, model)
+                feats = run_batch(cur_batch, model, dataset)
                 i1 = i0 + len(cur_batch)
                 feat_dset[i0:i1] = feats
                 print('Processed %d / %d images' % (i1, len(input_paths)))

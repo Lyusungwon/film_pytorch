@@ -47,8 +47,6 @@ def make_vqa2(data_dir):
     answer_idx_to_word = dict()
     question_type_to_idx = dict()
     idx_to_question_type = dict()
-    # answer_type_to_idx = dict()
-    # idx_to_answer_type = dict()
     for word in sorted(list(q_corpus)):
         word_to_idx[word] = len(word_to_idx)
         idx_to_word[len(idx_to_word)] = word
@@ -58,7 +56,6 @@ def make_vqa2(data_dir):
     for question_type in sorted(list(question_types)):
         question_type_to_idx[question_type] = len(question_type_to_idx)
         idx_to_question_type[len(idx_to_question_type)] = question_type
-    print(len(q_corpus), len(a_corpus), len(question_types))
     # for answer_type in sorted(list(answer_types)):
     #     answer_type_to_idx[answer_type] = len(answer_type_to_idx)
         # idx_to_answer_type[len(idx_to_answer_type)] = answer_type

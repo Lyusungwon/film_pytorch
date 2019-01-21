@@ -1,6 +1,7 @@
 import torch.optim as optim
 import torch.nn.functional as F
 from tensorboardX import SummaryWriter
+from torchsummary import summary
 from utils import *
 from configuration import get_config
 from recorder import Recorder
@@ -8,8 +9,10 @@ import dataloader
 from film import Film
 from san import San
 from rn import RelationalNetwork
+import wandb
 
 args = get_config()
+wandb.init(args.project)
 device = args.device
 torch.manual_seed(args.seed)
 
@@ -26,12 +29,16 @@ elif args.model == 'san':
 elif args.model == 'rn':
     model = RelationalNetwork(args)
 optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+if args.lr_reduce:
+    reduce_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min')
 if args.load_model:
     model, optimizer, start_epoch, batch_record_idx = load_checkpoint(model, optimizer, args.log, device)
 
 if args.multi_gpu:
     model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
 model = model.to(device)
+summary(model, [(3, args.input_h, args.input_w), (10), (1)])
+wandb.watch(model)
 
 
 def epoch(epoch_idx, is_train):
@@ -55,9 +62,12 @@ def epoch(epoch_idx, is_train):
         recorder.batch_end(loss, correct, types)
         if is_train and (batch_idx % args.log_interval == 0):
             recorder.log_batch(batch_idx, batch_size)
-    if not is_train and not args.cv_pretrained:
-        recorder.log_data(image.data, question.data, answer.data)
     recorder.log_epoch()
+    if not is_train:
+        if args.lr_reduce:
+            reduce_scheduler.step(recorder.get_epoch_loss())
+        if not args.cv_pretrained:
+            recorder.log_data(image.data, question.data, answer.data)
 
 
 if __name__ == '__main__':
