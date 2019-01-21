@@ -90,6 +90,7 @@ class VQA(Dataset):
             print(f"Start loading {self.idx_dict_file}")
             with open(self.idx_dict_file, 'rb') as file:
                 self.idx_dict = pickle.load(file)
+                print(self.idx_dict)
 
 
     def __len__(self):
