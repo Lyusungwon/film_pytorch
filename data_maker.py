@@ -168,7 +168,7 @@ def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
     return idx_dict
 
 
-def build_model(model, stage=3):
+def build_model(model, stage=4):
     import torchvision.models
     if not hasattr(torchvision.models, model):
         raise ValueError('Invalid model "%s"' % model)
