@@ -106,7 +106,8 @@ class VQA(Dataset):
                 image = self.transform(image).unsqueeze(0)
         else:
             image_idx = int(img_file.split('.')[0].split('_')[-1])
-            image = self.images[int(self.idx_dict[image_idx])]
+            print(self.idx_dict[image_idx])
+            image = self.images[self.idx_dict[image_idx]]
             image = torch.from_numpy(image).unsqueeze(0)
         q = torch.from_numpy(q).to(torch.long)
         return image, q, a, q_t
