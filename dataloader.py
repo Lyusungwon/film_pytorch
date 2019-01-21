@@ -6,8 +6,9 @@ from torch.nn.utils.rnn import pad_sequence
 import pickle
 from PIL import Image
 from pathlib import Path
-from clevr_maker import make_clevr_images, make_clevr_questions
-from vqa2_maker import make_vqa2
+# from clevr_maker import make_clevr_images, make_clevr_questions
+# from vqa2_maker import make_vqa2
+from data_maker import make_questions, make_images
 import h5py
 import numpy as np
 
@@ -95,24 +96,11 @@ class Clevr(Dataset):
         self.data_file = os.path.join(data_dir, 'data_{}.pkl'.format(self.mode))
         # self.dict_file = os.path.join(data_dir, 'data_dict.pkl')
         if not self.is_file_exits(self.question_file):
-            make_clevr_questions(data_dir)
+            make_questions(data_dir, 'clevr')
         if cv_pretrained:
             if not self.is_file_exits(self.img_dir):
                 make_clevr_images(data_dir, size)
         self.load_data()
-
-    def is_file_exits(self, file):
-        if os.path.isfile(file):
-            print(f"Data {file} exist")
-            return True
-        else:
-            print(f"Data {file} does not exist")
-            return False
-
-    def load_data(self):
-        print("Start loading {}".format(self.data_file))
-        with open(self.data_file, 'rb') as file:
-            self.data = pickle.load(file)
 
     def __len__(self):
         return len(self.data)
@@ -149,7 +137,7 @@ class VQA2(Dataset):
         self.data_file = os.path.join(data_dir, 'data_{}.pkl'.format(self.mode))
         self.dict_file = os.path.join(data_dir, 'data_dict.pkl')
         if not self.is_file_exits(self.data_file):
-            make_vqa2(data_dir)
+            make_questions(data_dir)
         self.load_data()
 
     def is_file_exits(self, file):
@@ -186,6 +174,68 @@ class VQA2(Dataset):
             image = torch.from_numpy(image).unsqueeze(0)
         q = torch.from_numpy(q).to(torch.long)
         return image, q, a, q_t, a_t
+
+
+
+class VQA(Dataset):
+    """Clevr dataset."""
+    def __init__(self, data_dir, dataset, train=True, cv_pretrained=True, transform=None, size=(224,224)):
+        self.dataset = dataset
+        self.mode = 'train' if train else 'val'
+        self.cv_pretrained = cv_pretrained
+        self.transform = transform
+        self.data_file = os.path.join(data_dir, 'data_{}.pkl'.format(self.mode))
+        self.question_file = os.path.join(data_dir, f'questions_{self.mode}.h5')
+        if self.cv_pretrained:
+            self.img_dir = os.path.join(data_dir, f'images_{self.mode}_{str(size[0])}.h5')
+        else:
+            self.img_dir = os.path.join(data_dir, 'images', f'{self.mode}')
+        if not self.is_file_exits(self.question_file):
+            make_questions(data_dir, dataset)
+        if cv_pretrained:
+            if not self.is_file_exits(self.img_dir):
+                self.idx_dict = make_images(data_dir, dataset, size)
+        self.load_data()
+
+    def is_file_exits(self, file):
+        if os.path.isfile(file):
+            print(f"Data {file} exist")
+            return True
+        else:
+            print(f"Data {file} does not exist")
+            return False
+
+    def load_data(self):
+        print("Start loading {}".format(self.data_file))
+        with open(self.data_file, 'rb') as file:
+            self.data = pickle.load(file)
+        if self.reduced_data:
+            if not self.is_file_exits(self.img_dir):
+                raise
+            with open(self.img_dir, 'rb') as file:
+                self.images = pickle.load(file)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        if self.cv_pretrained:
+            self.images = h5py.File(self.img_dir, 'r', swmr=True)['images']
+        self.questions = h5py.File(self.question_file, 'r', swmr=True)['questions']
+        img_file, a, q_t = self.data[idx]
+        q = self.questions[idx]
+        if not self.cv_pretrained:
+            image = Image.open(os.path.join(self.img_dir, img_file)).convert('RGB')
+            if self.transform:
+                image = self.transform(image).unsqueeze(0)
+        else:
+            image_idx = int(img_file.split('.')[0].split('_')[-1])
+            image = self.images[self.idx_dict[image_idx]]
+            image = torch.from_numpy(image).unsqueeze(0)
+        q = torch.from_numpy(q).to(torch.long)
+        return image, q, a, q_t
+
+
 
 
 if __name__ =='__main__':

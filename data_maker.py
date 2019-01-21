@@ -117,19 +117,17 @@ def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
     img_size = size
     idx_dict = dict()
     for mode in modes:
+        img_dir = f'images/{mode}' if dataset == 'vqa2' else f'{mode}2014'
         input_paths = []
         idx_set = set()
-        if dataset == 'clevr':
-            input_image_dir = os.path.join(data_dir, dataset, 'images', f'{mode}')
-        elif dataset == 'vqa2':
-            input_image_dir = os.path.join(data_dir, dataset, f'{mode}2014')
+        input_image_dir = os.path.join(data_dir, dataset, img_dir)
         idx_dict[f'{mode}'] = dict()
         for n, fn in enumerate(sorted(os.listdir(input_image_dir))):
             if not fn.endswith(image_type): continue
             idx = int(os.path.splitext(fn)[0].split('_')[-1])
-            if dataset != 'clevr':
-                idx_dict[f'{mode}'][idx] = n
-                idx = n
+            # if dataset != 'clevr':
+            idx_dict[f'{mode}'][idx] = n
+            idx = n
             input_paths.append((os.path.join(input_image_dir, fn), idx))
             idx_set.add(idx)
         input_paths.sort(key=lambda x: x[1])
@@ -167,7 +165,6 @@ def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
                 feat_dset[i0:i1] = feats
                 print('Processed %d / %d images' % (i1, len(input_paths)))
         print(f"images saved in {os.path.join(data_dir, dataset, f'image_{mode}_{str(size[0])}.h5')}")
-    print(idx_dict)
     return idx_dict
 
 
