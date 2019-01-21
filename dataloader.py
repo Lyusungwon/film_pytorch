@@ -90,8 +90,6 @@ class VQA(Dataset):
             print(f"Start loading {self.idx_dict_file}")
             with open(self.idx_dict_file, 'rb') as file:
                 self.idx_dict = pickle.load(file)
-                print(self.idx_dict)
-
 
     def __len__(self):
         return len(self.data)
@@ -108,7 +106,7 @@ class VQA(Dataset):
                 image = self.transform(image).unsqueeze(0)
         else:
             image_idx = int(img_file.split('.')[0].split('_')[-1])
-            image = self.images[self.idx_dict[image_idx]]
+            image = self.images[int(self.idx_dict[image_idx])]
             image = torch.from_numpy(image).unsqueeze(0)
         q = torch.from_numpy(q).to(torch.long)
         return image, q, a, q_t
