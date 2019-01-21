@@ -26,8 +26,8 @@ def make_questions(data_dir, dataset):
             with open(question_file) as f:
                 questions = json.load(f)['questions']
             for question in questions:
-                img_f = question['image_filename']
-                image_id = int(img_f.split('.')[0].split('_')[-1])
+                image_dir = question['image_filename']
+                image_id = int(image_dir.split('.')[0].split('_')[-1])
                 q_text = question['question'].lower()
                 q_words = re.sub('[^;A-Za-z ]+', "", q_text).split(' ')
                 q_corpus.update(q_words)
@@ -35,7 +35,7 @@ def make_questions(data_dir, dataset):
                 a_corpus.add(a_text)
                 q_type = question['program'][-1][query]
                 qt_corpus.add(q_type)
-                qa_list[mode].append((image_id, q_words, a_text, [q_type]))
+                qa_list[mode].append((image_dir, image_id, q_words, a_text, [q_type]))
         elif dataset == 'vqa2':
             question_list = {}
             question_file = os.path.join(data_dir, dataset, 'v2_OpenEnded_mscoco_{}2014_questions.json'.format(mode))
@@ -48,6 +48,7 @@ def make_questions(data_dir, dataset):
                 annotations = json.load(f)["annotations"]
             for q_obj in annotations:
                 image_id = q_obj['image_id']
+                image_dir = f'COCO_{self.mode}2014_{str(image_id).zfill(12)}.jpg'
                 question_text = question_list[q_obj['question_id']]
                 question_words = re.sub('[^0-9A-Za-z ]+', "", question_text).lower().split(' ')
                 question_type = q_obj['question_type']
@@ -57,7 +58,7 @@ def make_questions(data_dir, dataset):
                 a_corpus.add(answer_word)
                 qt_corpus.add(question_type)
                 qt_corpus.add(answer_type)
-                qa_list[mode].append((image_id, question_words, answer_word, [question_type, answer_type]))
+                qa_list[mode].append((image_dir, image_id, question_words, answer_word, [question_type, answer_type]))
 
     word_to_idx = {"<pad>": 0, "<eos>": 1}
     idx_to_word = {0: "<pad>", 1: "<eos>"}
@@ -92,7 +93,7 @@ def make_questions(data_dir, dataset):
     for mode in modes:
         with h5py.File(os.path.join(data_dir, dataset, f'questions_{mode}.h5'), 'w') as f:
             q_dset = None
-            for n, (image_id, q_word_list, answer_word, types) in enumerate(qa_list[mode]):
+            for n, (image_dir, image_id, q_word_list, answer_word, types) in enumerate(qa_list[mode]):
                 if q_dset is None:
                     N = len(qa_list[mode])
                     dt = h5py.special_dtype(vlen=np.dtype('int32'))
@@ -102,7 +103,7 @@ def make_questions(data_dir, dataset):
                 q_dset[n] = q
                 a = answer_word_to_idx[answer_word]
                 q_t = [question_type_to_idx[type] for type in types]
-                qa_idx_data[mode].append((image_id, a, q_t))
+                qa_idx_data[mode].append((image_dir, image_id, a, q_t))
         with open(os.path.join(data_dir, dataset, 'data_{}.pkl'.format(mode)), 'wb') as file:
             pickle.dump(qa_idx_data[mode], file, protocol=pickle.HIGHEST_PROTOCOL)
         print('data_{}.pkl saved'.format(mode))
@@ -166,6 +167,7 @@ def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
         with open(os.path.join(data_dir, dataset, 'idx_dict.pkl'), 'wb') as file:
             pickle.dump(idx_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
         print('idx_dict.pkl saved')
+
 
 def build_model(model, stage=4):
     import torchvision.models

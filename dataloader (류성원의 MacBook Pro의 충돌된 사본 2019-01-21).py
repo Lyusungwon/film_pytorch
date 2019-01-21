@@ -6,8 +6,11 @@ from torch.nn.utils.rnn import pad_sequence
 import pickle
 from PIL import Image
 from pathlib import Path
+# from clevr_maker import make_clevr_images, make_clevr_questions
+# from vqa2_maker import make_vqa2
 from data_maker import make_questions, make_images
 import h5py
+import numpy as np
 
 home = str(Path.home())
 
@@ -58,7 +61,7 @@ class VQA(Dataset):
         self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}.h5')
         if self.cv_pretrained:
             self.img_dir = os.path.join(data_dir, dataset, f'images_{self.mode}_{str(size[0])}.h5')
-            self.idx_dict_file = os.path.join(data_dir, dataset, 'idx_dict.pkl')
+            self.idx_dict_file = os.path.join(data_dir, dataset, f'idx_dict_{self.mode}.pkl')
         else:
             if dataset == 'clevr':
                 self.img_dir = os.path.join(data_dir, dataset, 'images', f'{self.mode}')
@@ -68,7 +71,7 @@ class VQA(Dataset):
             make_questions(data_dir, dataset)
         if cv_pretrained:
             if not self.is_file_exits(self.img_dir):
-                make_images(data_dir, dataset, size)
+                make_images(data_dir, dataset, size, 5, 1000)
         self.load_data()
 
     def is_file_exits(self, file):
@@ -95,19 +98,21 @@ class VQA(Dataset):
         if self.cv_pretrained:
             self.images = h5py.File(self.img_dir, 'r', swmr=True)['images']
         self.questions = h5py.File(self.question_file, 'r', swmr=True)['questions']
-        image_dir, image_id, a, q_t = self.data[idx]
+        img_file, a, q_t = self.data[idx]
         q = self.questions[idx]
         if not self.cv_pretrained:
-            image = Image.open(os.path.join(image_dir, img_file)).convert('RGB')
+            image = Image.open(os.path.join(self.img_dir, img_file)).convert('RGB')
             if self.transform:
                 image = self.transform(image).unsqueeze(0)
         else:
-            image = self.images[self.idx_dict[image_id]]
+            image_idx = int(img_file.split('.')[0].split('_')[-1])
+            image = self.images[self.idx_dict[image_idx]]
             image = torch.from_numpy(image).unsqueeze(0)
         q = torch.from_numpy(q).to(torch.long)
-        a = torch.Tensor([a]).to(torch.long)
-        q_t = torch.Tensor([q_t]).to(torch.long)
+        a = torch.Tensor(a)
         return image, q, a, q_t
+
+
 
 
 if __name__ =='__main__':
@@ -115,9 +120,8 @@ if __name__ =='__main__':
     for img, q, a, types in dataloader:
         print(img.size())
         print(q)
-        print(a.size())
-        print(types.size())
-        break
+        print(a)
+        print(types)
     #
     # if data == 'clevr' or data == 'sample':
     #     dataloader = DataLoader(
