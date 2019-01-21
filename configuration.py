@@ -11,7 +11,7 @@ def get_config():
     parser = argparse.ArgumentParser(description='parser')
 
     model_arg = parser.add_argument_group('Model')
-    model_arg.add_argument('--project', type=str, default='sample')
+    model_arg.add_argument('--project', type=str, default='vqa')
     model_arg.add_argument('--model', type=str, default='rn')
     # Load configuration of the paper
     model_arg.add_argument('--load-default', action='store_true')
@@ -44,7 +44,7 @@ def get_config():
     model_arg.add_argument('--rn-fp-dropout', type=float, default=0.5)
 
     data_arg = parser.add_argument_group('Data')
-    data_arg.add_argument('--data-directory', type=str, default=os.path.join(home,'data'), metavar='N', help='directory of data')
+    data_arg.add_argument('--data-directory', type=str, default=os.path.join(home, 'data'), metavar='N', help='directory of data')
     data_arg.add_argument('--dataset', type=str, default='clevr')
     data_arg.add_argument('--input-h', type=int, default=128)
     data_arg.add_argument('--input-w', type=int, default=128)
@@ -66,6 +66,7 @@ def get_config():
     train_arg.add_argument('--time-stamp', type=str, default=datetime.datetime.now().strftime("%y%m%d%H%M%S"), metavar='N', help='time of the run(no modify)')
     train_arg.add_argument('--memo', type=str, default='default', metavar='N', help='memo of the model')
     train_arg.add_argument('--load-model', type=str, default=None, metavar='N', help='load previous model')
+    train_arg.add_argument('--wandb', action='store_true')
 
     args, unparsed = parser.parse_known_args()
 
@@ -82,8 +83,8 @@ def get_config():
 
     config_list = [args.project, args.model, args.dataset, args.epochs, args.batch_size, args.lr,
                    args.device, args.multi_gpu, args.gpu_num] + args.data_config + \
-                ['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
-                 'te', args.te_pretrained, args.te_embedding, args.te_hidden, args.te_layer]
+        ['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
+         'te', args.te_pretrained, args.te_embedding, args.te_hidden, args.te_layer]
 
     if args.model == 'film':
         config_list = config_list + \
@@ -108,4 +109,3 @@ def get_config():
 
     print(f"Config: {args.config}")
     return args
-

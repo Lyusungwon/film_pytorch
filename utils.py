@@ -10,7 +10,7 @@ def timefn(fn):
         t1 = time.time()
         result = fn(*args)
         t2 = time.time()
-        print("@timefn:{} took {} seconds".format(fn.__name__, t2-t1))
+        print("@timefn:{} took {} seconds".format(fn.__name__, t2 - t1))
         return result
     return wrap
 
@@ -29,8 +29,8 @@ def baseline_encode(images, questions):
     n, c, h, w = images.size()
     o = h * w
     hd = questions.size(1)
-    x_coordinate = torch.linspace(-h/2, h/2, h).view(1, 1, h, 1).expand(n, 1, h, w).to(device)
-    y_coordinate = torch.linspace(-w/2, w/2, w).view(1, 1, 1, w).expand(n, 1, h, w).to(device)
+    x_coordinate = torch.linspace(-h / 2, h / 2, h).view(1, 1, h, 1).expand(n, 1, h, w).to(device)
+    y_coordinate = torch.linspace(-w / 2, w / 2, w).view(1, 1, 1, w).expand(n, 1, h, w).to(device)
     questions = questions.unsqueeze(2).unsqueeze(3).expand(n, hd, h, w)
     images = torch.cat([images, x_coordinate, y_coordinate, questions], 1).view(n, -1, o).transpose(1, 2)
     return images
@@ -103,18 +103,18 @@ def load_pretrained_embedding(word2idx, embedding_dim):
     return embedding
 
 
-def load_pretrained_conv(output_channel=None):
-    import torchvision.models as models
-    model = models.resnet101(pretrained=True)
-    feature_extractor = list(model.children())[:-3]
-    for part in feature_extractor:
-        for param in part.parameters():
-            param.requires_grad = False
-    if output_channel:
-        feature_extractor.append(nn.Conv2d(1024, output_channel, 1, 1))
-    feature_extractor = nn.Sequential(*feature_extractor)
-    print("Loaded pretrained feature extraction model.")
-    return feature_extractor
+# def load_pretrained_conv(output_channel=None):
+#     import torchvision.models as models
+#     model = models.resnet101(pretrained=True)
+#     feature_extractor = list(model.children())[:-3]
+#     for part in feature_extractor:
+#         for param in part.parameters():
+#             param.requires_grad = False
+#     if output_channel:
+#         feature_extractor.append(nn.Conv2d(1024, output_channel, 1, 1))
+#     feature_extractor = nn.Sequential(*feature_extractor)
+#     print("Loaded pretrained feature extraction model.")
+#     return feature_extractor
 
 
 def load_dict(args):
@@ -141,4 +141,3 @@ def load_dict(args):
 #     elif args.model == 'rn':
 #         model = RelationalNetwork(args)
 #     return model
-

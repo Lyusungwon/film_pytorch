@@ -11,7 +11,6 @@ from rn import RelationalNetwork
 import wandb
 
 args = get_config()
-wandb.init(args.project)
 device = args.device
 torch.manual_seed(args.seed)
 
@@ -36,7 +35,9 @@ if args.load_model:
 if args.multi_gpu:
     model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
 model = model.to(device)
-wandb.watch(model)
+if args.wandb:
+    wandb.init(args.project)
+    wandb.watch(model)
 
 
 def epoch(epoch_idx, is_train):

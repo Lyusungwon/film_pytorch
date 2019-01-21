@@ -6,6 +6,7 @@ import wandb
 class Recorder:
     def __init__(self, writer, args, batch_record_idx=0):
         self.writer = writer
+        self.wandb = args.wandb
         self.dataset = args.dataset
         self.batch_size = args.batch_size
         self.idx_to_question_type = args.idx_to_question_type
@@ -73,9 +74,10 @@ class Recorder:
             self.batch_loss / batch_size,
             self.batch_time,
             self.batch_correct / batch_size))
-        wandb.log({f"{self.mode} batch loss": self.batch_loss / batch_size,
-                   f"{self.mode} batch accuracy": self.batch_correct / batch_size,
-                   f"{self.mode} batch time": self.batch_time})
+        if self.args.wandb:
+            wandb.log({f"{self.mode} batch loss": self.batch_loss / batch_size,
+                       f"{self.mode} batch accuracy": self.batch_correct / batch_size,
+                       f"{self.mode} batch time": self.batch_time})
         self.writer.add_scalar('{}-4.Batch loss'.format(self.mode), self.batch_loss / batch_size, self.batch_record_idx)
         self.writer.add_scalar('{}-5.Batch accuracy'.format(self.mode), self.batch_correct / batch_size, self.batch_record_idx)
         self.writer.add_scalar('{}-6.Batch time'.format(self.mode), self.batch_time, self.batch_record_idx)
@@ -92,9 +94,6 @@ class Recorder:
             self.epoch_loss / self.dataset_size,
             self.epoch_time,
             self.epoch_correct / self.dataset_size))
-        wandb.log({f"{self.mode} epoch loss": self.epoch_loss / self.dataset_size,
-                   f"{self.mode} epoch accuracy": self.epoch_correct / self.dataset_size,
-                   f"{self.mode} epoch time": self.epoch_time})
         self.writer.add_scalar('{}-1.Total loss'.format(self.mode), self.epoch_loss / self.dataset_size, self.epoch_idx)
         self.writer.add_scalar('{}-2.Total accuracy'.format(self.mode), self.epoch_correct / self.dataset_size, self.epoch_idx)
         self.writer.add_scalar('{}-3.Total time'.format(self.mode), self.epoch_time, self.epoch_idx)
@@ -104,9 +103,13 @@ class Recorder:
             self.per_question_type['number'][question_type_name] += self.per_question['number'][question_type_idx]
         for question_type_name in self.per_question_type['correct'].keys():
             type_accuracy = self.per_question_type['correct'][question_type_name] / self.per_question_type['number'][question_type_name]
-            per_question_log[f"{self.mode} question {question_type_nema} accuracy"] = type_accuracy
+            per_question_log[f"{self.mode} question {question_type_name} accuracy"] = type_accuracy
             self.writer.add_scalar("{}-7. Question '{}' accuracy".format(self.mode, question_type_name), type_accuracy, self.epoch_idx)
-        wandb.log(per_question_log)
+        if self.args.wandb:
+            wandb.log({f"{self.mode} epoch loss": self.epoch_loss / self.dataset_size,
+                       f"{self.mode} epoch accuracy": self.epoch_correct / self.dataset_size,
+                       f"{self.mode} epoch time": self.epoch_time})
+            wandb.log(per_question_log)
 
     def log_data(self, image, question, answer):
         n = min(self.batch_size, 4)
