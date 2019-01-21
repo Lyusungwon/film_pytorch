@@ -70,7 +70,7 @@ class VQA(Dataset):
             make_questions(data_dir, dataset)
         if cv_pretrained:
             if not self.is_file_exits(self.img_dir):
-                self.idx_dict = make_images(data_dir, dataset, size)
+                self.idx_dict = make_images(data_dir, dataset, size, 5)
         self.load_data()
 
     def is_file_exits(self, file):
