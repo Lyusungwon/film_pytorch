@@ -48,7 +48,7 @@ def make_questions(data_dir, dataset):
                 annotations = json.load(f)["annotations"]
             for q_obj in annotations:
                 image_id = q_obj['image_id']
-                image_dir = f'COCO_{self.mode}2014_{str(image_id).zfill(12)}.jpg'
+                image_dir = f'COCO_{mode}2014_{str(image_id).zfill(12)}.jpg'
                 question_text = question_list[q_obj['question_id']]
                 question_words = re.sub('[^0-9A-Za-z ]+', "", question_text).lower().split(' ')
                 question_type = q_obj['question_type']
