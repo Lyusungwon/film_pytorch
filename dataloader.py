@@ -20,7 +20,7 @@ def collate_text(list_inputs):
     answers = []
     question_types = []
     for i, q, a, types in list_inputs:
-        images.append(i)
+        images.append(i.squeeze(0))
         questions.append(q)
         q_length.append(len(q))
         answers.append(a)
