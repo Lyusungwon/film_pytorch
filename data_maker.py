@@ -10,31 +10,29 @@ import h5py
 from scipy.misc import imread, imresize
 
 home = str(Path.home())
-
-# modes = ['train', 'val']
-modes = ['val']
+modes = ['train', 'val']
 
 
 def make_questions(data_dir, dataset):
     print(f"Start making {dataset} data pickle")
-    query = 'type' if 'sample' in data_dir else 'function'
+    query = 'type' if dataset == 'sample' else 'function'
     q_corpus = set()
     a_corpus = set()
     qt_corpus = set()
     qa_list = defaultdict(list)
     for mode in modes:
-        if dataset == 'clevr':
+        if dataset == 'clevr' or dataset == 'sample':
             question_file = os.path.join(data_dir, dataset, 'questions', 'CLEVR_{}_questions.json'.format(mode))
             with open(question_file) as f:
                 questions = json.load(f)['questions']
-            for question in q_list[mode]:
-                img_f = q_obj['image_filename']
-                q_text = q_obj['question'].lower()
+            for question in questions:
+                img_f = question['image_filename']
+                q_text = question['question'].lower()
                 q_words = re.sub('[^;A-Za-z ]+', "", q_text).split(' ')
                 q_corpus.update(q_words)
-                a_text = str(q_obj['answer']).lower().strip()
+                a_text = str(question['answer']).lower().strip()
                 a_corpus.add(a_text)
-                q_type = q_obj['program'][-1][query]
+                q_type = question['program'][-1][query]
                 qt_corpus.add(q_type)
                 qa_list[mode].append((img_f, q_words, a_text, [q_type]))
         elif dataset == 'vqa2':
@@ -54,8 +52,6 @@ def make_questions(data_dir, dataset):
                 question_type = q_obj['question_type']
                 answer_word = q_obj["multiple_choice_answer"]
                 answer_type = q_obj["answer_type"]
-                # question_type_idx = question_type_dict[question_type]
-                # answer_type_idx = answer_type_dict[answer_type]
                 q_corpus.update(question_words)
                 a_corpus.add(answer_word)
                 qt_corpus.add(question_type)
@@ -77,7 +73,9 @@ def make_questions(data_dir, dataset):
     for question_type in sorted(list(qt_corpus)):
         question_type_to_idx[question_type] = len(question_type_to_idx)
         idx_to_question_type[len(idx_to_question_type)] = question_type
-    print(len(q_corpus), len(a_corpus), len(qt_corpus))
+    print(f"The number of questions {len(q_corpus)}")
+    print(f"The number of answers {len(a_corpus)}")
+    print(f"The number of question types {len(qt_corpus)}")
     data_dict = {'word_to_idx': word_to_idx,
                  'idx_to_word': idx_to_word,
                  'answer_word_to_idx': answer_word_to_idx,
@@ -113,7 +111,8 @@ def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
     print(f"Start making {dataset} image pickle")
     model_name = 'resnet152' if dataset == 'vqa2' else 'resnet101'
     image_type = 'jpg' if dataset == 'vqa2' else 'png'
-    model = build_model(model_name)
+    stage = 4 if dataset == 'vqa2' else 3
+    model = build_model(model_name, stage)
     img_size = size
     idx_dict = dict()
     for mode in modes:
@@ -209,7 +208,10 @@ def run_batch(cur_batch, model, dataset):
 
 if __name__ =='__main__':
     data_directory = os.path.join(home, 'data')
+    make_questions(data_directory, 'vqa2')
     make_images(data_directory, 'vqa2', (448, 448), 64, 100)
+    # make_questions(data_directory, 'sample')
+    # make_images(data_directory, 'sample', (224, 224), 5, 100)
 
 # question_type_dict = {'exist': 10,
 #                     'count': 20,
