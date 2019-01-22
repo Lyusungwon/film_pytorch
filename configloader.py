@@ -6,12 +6,12 @@ def load_default_config(args):
         args.cv_kernel = 4
         args.cv_stride = 2
         args.cv_layer = 4
-        args.te_embedding = 2
+        args.te_embedding = 200
         args.te_hidden = 4096
         args.te_layer = 1
         args.film_res_kernel = 3
         args.film_res_layer = 4
-        args.film_cf_filter = 51200
+        args.film_cf_filter = 512
         args.film_fc_hidden = 1024
         args.film_fc_layer = 2
         args.input_h = 224
