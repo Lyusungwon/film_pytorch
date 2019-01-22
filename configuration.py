@@ -43,7 +43,7 @@ def get_config():
     model_arg.add_argument('--rn-fp-layer', type=int, default=3)
     model_arg.add_argument('--rn-fp-dropout', type=float, default=0.5)
     # rn
-    model_arg.add_argument('--mlb-hidden', type=int, default=256)
+    model_arg.add_argument('--mlb-hidden', type=int, default=1200)
     model_arg.add_argument('--mlb-layer', type=int, default=3)
 
     data_arg = parser.add_argument_group('Data')

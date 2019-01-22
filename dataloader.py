@@ -52,8 +52,6 @@ class VQA(Dataset):
     def __init__(self, data_dir, dataset, train=True, cv_pretrained=True, transform=None, size=(224,224), top_k=0):
         self.dataset = dataset
         self.mode = 'train' if train else 'val'
-        if dataset == 'sample':
-            self.mode = 'new'
         self.cv_pretrained = cv_pretrained
         self.transform = transform
         self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}_{top_k}.h5')
@@ -104,6 +102,8 @@ class VQA(Dataset):
             image = torch.from_numpy(image).unsqueeze(0)
         else:
             image_file = f'COCO_{self.mode}2014_{str(ii).zfill(12)}.jpg' if 'vqa' in self.dataset else f'CLEVR_{self.mode}_{str(ii).zfill(6)}.png'
+            if self.dataset == 'sample':
+                image_file = f'CLEVR_new_{str(ii).zfill(6)}.png'
             image = Image.open(os.path.join(self.image_dir, image_file)).convert('RGB')
             if self.transform:
                 image = self.transform(image).unsqueeze(0)
@@ -126,7 +126,7 @@ if __name__ =='__main__':
     #     dataloader = DataLoader(
     #         Clevr(os.path.join(data_directory, data), train=is_train, cv_pretrained=cv_pretrained,
     #               transform=transform, size=(input_h, input_w)),
-    #         batch_size=batch_size, shuffle=True,
+    #         batch_size=batch_size, shuffle=True54,
     #         num_workers=cpu_num, pin_memory=True,
     #         collate_fn=collate_clevr)
     # elif data == 'vqa2':

@@ -8,6 +8,7 @@ import dataloader
 from film import Film
 from san import San
 from rn import RelationalNetwork
+from mlb import Mlb
 import wandb
 
 args = get_config()
@@ -26,6 +27,8 @@ elif args.model == 'san':
     model = San(args)
 elif args.model == 'rn':
     model = RelationalNetwork(args)
+elif args.model == 'mlb':
+    model = Mlb(args)
 optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 if args.lr_reduce:
     reduce_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min')

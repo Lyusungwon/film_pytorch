@@ -27,7 +27,7 @@ def load_default_config(args):
         args.cv_filter = 512
         args.te_embedding = 1000
         args.te_hidden = 1000
-        args.san_layer = 1
+        args.san_layer = 2
         args.san_k = 640
         args.batch_size = 100
         args.input_h = 448
@@ -56,5 +56,17 @@ def load_default_config(args):
         args.top_k = 0
         print(f"Default config for {args.model} loaded.")
         return args
+    elif args.model == 'mlb' and args.dataset == 'vqa2':
+        args.cv_pretrained = True
+        args.cv_filter = 2048
+        args.te_embedding = 200
+        args.te_hidden = 2400
+        args.mlb_hidden = 1200
+        args.mlb_layer = 3
+        args.batch_size = 200
+        args.input_h = 448
+        args.input_w = 448
+        args.top_k = 1000
     else:
+        print("Default config not found!")
         return args
