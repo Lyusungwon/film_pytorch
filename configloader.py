@@ -24,11 +24,11 @@ def load_default_config(args):
         return args
     elif args.model == 'san' and args.dataset == 'vqa2':
         args.cv_pretrained = True
-        args.cv_filter = 512
-        args.te_embedding = 1000
-        args.te_hidden = 1000
+        args.cv_filter = 1024
+        args.te_embedding = 1024
+        args.te_hidden = 1024
         args.san_layer = 2
-        args.san_k = 640
+        args.san_k = 1024
         args.batch_size = 100
         args.input_h = 448
         args.input_w = 448
