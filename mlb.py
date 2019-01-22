@@ -20,7 +20,8 @@ class Mlb(nn.Module):
             object_num = input_h * input_w
         else:
             object_num = 64
-        self.blocks = nn.ModuleList([MlbBlock(args.cv_filter, args.te_hidden, args.mlb_hidden, object_num) for _ in range(args.mlb_layer)])
+        self.first_block = MlbBlock(args.cv_filter, args.te_hidden, args.mlb_hidden, object_num)
+        self.blocks = nn.ModuleList([MlbBlock(args.cv_filter, args.mlb_hidden, args.mlb_hidden, object_num) for _ in range(args.mlb_layer - 1)])
         self.fc = nn.Linear(args.mlb_hidden, args.a_size)
 
     def forward(self, image, question, question_length):
@@ -30,15 +31,16 @@ class Mlb(nn.Module):
             x = self.visual_encoder(image)
         b, c, h, w = x.size()
         x = x.view(b, c, -1).transpose(1, 2)
-        h = self.text_encoder(question, question_length)
+        q = self.text_encoder(question, question_length)
+        h = self.first_block(q, x)
         for block in self.blocks:
             h = block(h, x)
-        logits = self.fc(u)
+        logits = self.fc(h)
         return logits
 
 
 class MlbBlock(nn.Module):
-    def __init__(self, i, q, h, object_number):
+    def __init__(self, i, q, h, object_num):
         super().__init__()
         self.qs = nn.Sequential(
             nn.Linear(q, h),
@@ -58,5 +60,5 @@ class MlbBlock(nn.Module):
         question = self.qs(q).unsqueeze(2)
         f = objects * question
         res = self.res(q)
-        h = res + self.fc(f)
+        h = res + self.fc(f).squeeze(2)
         return h
