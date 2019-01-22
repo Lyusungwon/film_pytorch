@@ -32,7 +32,7 @@ def load_default_config(args):
         args.batch_size = 100
         args.input_h = 448
         args.input_w = 448
-        args.top_k = 2000
+        args.top_k = 1000
         print(f"Default config for {args.model} loaded.")
         return args
     elif args.model == 'rn':
