@@ -24,7 +24,7 @@ def make_questions(data_dir, dataset, top_k=None):
             for q_obj in annotations:
                 answer_word = q_obj["multiple_choice_answer"]
                 answer_corpus.append(answer_word)
-        top_k_words = Counter(answer_corpus).most_common(top_k).keys()
+        top_k_words = set([i for (i, j) in Counter(answer_corpus).most_common(top_k)])
     query = 'type' if dataset == 'sample' else 'function'
     q_corpus = set()
     a_corpus = set()
