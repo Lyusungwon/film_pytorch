@@ -129,7 +129,7 @@ def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
     print(f"Start making {dataset} image pickle")
     model_name = 'resnet152' if dataset == 'vqa2' else 'resnet101'
     image_type = 'jpg' if dataset == 'vqa2' else 'png'
-    stage = 3 if size <=300 else 4
+    stage = 3 if size[0] <=300 else 4
     model = build_model(model_name, stage)
     img_size = size
     idx_dict = dict()
