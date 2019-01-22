@@ -100,7 +100,7 @@ class VQA(Dataset):
         q_t = question_file['question_types'][idx]
         ii = question_file['image_ids'][idx]
         if self.cv_pretrained:
-            image = h5py.File(self.image_dir, 'r', swmr=True)['images'][self.idx_dict[image_id]]
+            image = h5py.File(self.image_dir, 'r', swmr=True)['images'][self.idx_dict[ii]]
             image = torch.from_numpy(image).unsqueeze(0)
         else:
             image_file = f'COCO_{self.mode}2014_{str(ii).zfill(12)}.jpg' if 'vqa' in self.dataset else f'CLEVR_{self.mode}_{str(ii).zfill(6)}.png'
