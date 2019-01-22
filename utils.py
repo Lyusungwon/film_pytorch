@@ -117,7 +117,7 @@ def load_pretrained_embedding(word2idx, embedding_dim):
 
 
 def load_dict(args):
-    dict_file = os.path.join(args.data_directory, args.dataset, 'data_dict.pkl')
+    dict_file = os.path.join(args.data_directory, args.dataset, f'data_dict_{args.top_k}.pkl')
     with open(dict_file, 'rb') as file:
         data_dict = pickle.load(file)
     args.word_to_idx = data_dict['word_to_idx']

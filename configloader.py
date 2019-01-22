@@ -19,17 +19,20 @@ def load_default_config(args):
         args.batch_size = 64
         args.lr = 3e-4
         args.weight_decay = 1e-5
+        args.top_k = 0
         print(f"Default config for {args.model} loaded.")
         return args
     elif args.model == 'san' and args.dataset == 'vqa2':
         args.cv_pretrained = True
         args.cv_filter = 512
-        args.te_hidden = 512
+        args.te_embedding = 1000
+        args.te_hidden = 1000
         args.san_layer = 1
         args.san_k = 640
         args.batch_size = 100
         args.input_h = 448
         args.input_w = 448
+        args.top_k = 2000
         print(f"Default config for {args.model} loaded.")
         return args
     elif args.model == 'rn':
@@ -50,6 +53,7 @@ def load_default_config(args):
         args.input_w = 128
         args.batch_size = 64
         args.lr = 2.5e-4
+        args.top_k = 0
         print(f"Default config for {args.model} loaded.")
         return args
     else:
