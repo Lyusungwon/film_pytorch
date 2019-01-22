@@ -42,13 +42,16 @@ def get_config():
     model_arg.add_argument('--rn-fp-hidden', type=int, default=256)
     model_arg.add_argument('--rn-fp-layer', type=int, default=3)
     model_arg.add_argument('--rn-fp-dropout', type=float, default=0.5)
+    # rn
+    model_arg.add_argument('--mlb-hidden', type=int, default=256)
+    model_arg.add_argument('--mlb-layer', type=int, default=3)
 
     data_arg = parser.add_argument_group('Data')
     data_arg.add_argument('--data-directory', type=str, default=os.path.join(home, 'data'), metavar='N', help='directory of data')
     data_arg.add_argument('--dataset', type=str, default='clevr')
     data_arg.add_argument('--input-h', type=int, default=128)
     data_arg.add_argument('--input-w', type=int, default=128)
-    data_arg.add_argument('--reduced-data', action='store_true')
+    data_arg.add_argument('--top-k', type=int, default=0)
 
     train_arg = parser.add_argument_group('Train')
     train_arg.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default: 64)')
@@ -79,7 +82,7 @@ def get_config():
         torch.cuda.set_device(args.device)
         args.device = torch.device(args.device)
 
-    args.data_config = [args.input_h, args.input_w, args.cpu_num, args.cv_pretrained]
+    args.data_config = [args.input_h, args.input_w, args.cpu_num, args.cv_pretrained, args.top_k]
 
     config_list = [args.project, args.model, args.dataset, args.epochs, args.batch_size, args.lr,
                    args.device, args.multi_gpu, args.gpu_num] + args.data_config + \

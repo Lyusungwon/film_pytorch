@@ -28,6 +28,8 @@ def load_default_config(args):
         args.san_layer = 1
         args.san_k = 640
         args.batch_size = 100
+        args.input_h = 448
+        args.input_w = 448
         print(f"Default config for {args.model} loaded.")
         return args
     elif args.model == 'rn':

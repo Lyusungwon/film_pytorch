@@ -34,13 +34,13 @@ def collate_text(list_inputs):
 
 
 def load_dataloader(data_directory, dataset, is_train=True, batch_size=128, data_config=[224, 224, 0, True]):
-    input_h, input_w, cpu_num, cv_pretrained = data_config
+    input_h, input_w, cpu_num, cv_pretrained, top_k = data_config
     if cv_pretrained:
         transform = transforms.Compose([transforms.ToTensor()])
     else:
         transform = transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])
     dataloader = DataLoader(
-        VQA(data_directory, dataset, train=is_train, cv_pretrained=cv_pretrained, transform=transform),
+        VQA(data_directory, dataset, train=is_train, cv_pretrained=cv_pretrained, transform=transform, size=(input_h, input_w), top_k=top_k),
         batch_size=batch_size, shuffle=True,
         num_workers=cpu_num, pin_memory=True,
         collate_fn=collate_text)
@@ -49,23 +49,22 @@ def load_dataloader(data_directory, dataset, is_train=True, batch_size=128, data
 
 class VQA(Dataset):
     """VQA dataset."""
-    def __init__(self, data_dir, dataset, train=True, cv_pretrained=True, transform=None, size=(224,224)):
+    def __init__(self, data_dir, dataset, train=True, cv_pretrained=True, transform=None, size=(224,224), top_k=0):
         self.dataset = dataset
         self.mode = 'train' if train else 'val'
         self.cv_pretrained = cv_pretrained
         self.transform = transform
-        self.data_file = os.path.join(data_dir, dataset, f'data_{self.mode}.pkl')
-        self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}.h5')
+        self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}_{top_k}.h5')
         if self.cv_pretrained:
             self.image_dir = os.path.join(data_dir, dataset, f'images_{self.mode}_{str(size[0])}.h5')
             self.idx_dict_file = os.path.join(data_dir, dataset, 'idx_dict.pkl')
         else:
-            if dataset == 'clevr':
+            if dataset == 'clevr' or dataset == 'sample':
                 self.image_dir = os.path.join(data_dir, dataset, 'images', f'{self.mode}')
             elif dataset == 'vqa2':
                 self.image_dir = os.path.join(data_dir, dataset, f'{self.mode}2014')
         if not self.is_file_exits(self.question_file):
-            make_questions(data_dir, dataset)
+            make_questions(data_dir, dataset, top_k)
         if cv_pretrained:
             if not self.is_file_exits(self.image_dir):
                 make_images(data_dir, dataset, size)
@@ -80,25 +79,29 @@ class VQA(Dataset):
             return False
 
     def load_data(self):
-        print(f"Start loading {self.data_file}")
-        with open(self.data_file, 'rb') as file:
-            self.data = pickle.load(file)
+        # print(f"Start loading {self.data_file}")
+        # with open(self.data_file, 'rb') as file:
+        #     self.data = pickle.load(file)
         if self.cv_pretrained:
             print(f"Start loading {self.idx_dict_file}")
             with open(self.idx_dict_file, 'rb') as file:
                 self.idx_dict = pickle.load(file)[self.mode]
 
     def __len__(self):
-        return len(self.data)
+        return h5py.File(self.question_file, 'r', swmr=True)['questions'].shape[0]
 
     def __getitem__(self, idx):
-        self.questions = h5py.File(self.question_file, 'r', swmr=True)['questions']
-        image_file, image_id, a, q_t = self.data[idx]
-        q = self.questions[idx]
+        question_file = h5py.File(self.question_file, 'r', swmr=True)
+        # image_file, image_id, a, q_t = self.data[idx]
+        q = question_file['questions'][idx]
+        a = question_file['answers'][idx]
+        q_t = question_file['question_types'][idx]
+        ii = question_file['image_ids'][idx]
         if self.cv_pretrained:
             image = h5py.File(self.image_dir, 'r', swmr=True)['images'][self.idx_dict[image_id]]
             image = torch.from_numpy(image).unsqueeze(0)
         else:
+            image_file = f'COCO_{self.mode}2014_{str(ii).zfill(12)}.jpg' if 'vqa' in self.dataset else f'CLEVR_new_{str(ii).zfill(6)}.png'
             image = Image.open(os.path.join(self.image_dir, image_file)).convert('RGB')
             if self.transform:
                 image = self.transform(image).unsqueeze(0)

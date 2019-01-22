@@ -7,18 +7,15 @@ class San(nn.Module):
     def __init__(self, args):
         super().__init__()
         assert args.cv_filter == args.te_hidden
-        self.d = args.cv_filter
-        if args.te_pretrained:
-            pretrained_weight = load_pretrained_embedding(args.word2idx, args.te_embedding)
-        else:
-            pretrained_weight = None
+        pretrained_weight = load_pretrained_embedding(args.word2idx, args.te_embedding) if args.te_pretrained else None
         self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, pretrained_weight)
         if args.cv_pretrained:
-            self.visual_encoder = nn.Conv2d(1024, args.cv_filter, 1, 1)
+            filters = 1024 if args.dataset == 'clevr' else 2048
+            self.visual_encoder = nn.Conv2d(filters, args.cv_filter, 1, 1)
         else:
             self.visual_encoder = Conv(args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm)
-        self.blocks = nn.ModuleList([SanBlock(self.d, args.san_k) for _ in range(args.san_layer)])
-        self.fc = nn.Linear(self.d, args.a_size)
+        self.blocks = nn.ModuleList([SanBlock(args.cv_filter, args.san_k) for _ in range(args.san_layer)])
+        self.fc = nn.Linear(args.cv_filter, args.a_size)
 
     def forward(self, image, question, question_length):
         x = self.visual_encoder(image)
@@ -26,7 +23,7 @@ class San(nn.Module):
         x = x.view(b, c, -1)
         u = self.text_encoder(question, question_length)
         for block in self.blocks:
-            _, u = block(x, u)
+            u = block(x, u)
         logits = self.fc(u)
         return logits
 
@@ -39,9 +36,9 @@ class SanBlock(nn.Module):
         self.wp = nn.Linear(k, 1)
 
     def forward(self, i, q):
-        wi = self.wia(i.transpose(1, 2))
+        wi = self.wia(i.transpose(2, 1))
         wq = self.wqa(q).unsqueeze(1).expand_as(wi)
         ha = torch.tanh(wi + wq)
         pi = torch.softmax(self.wp(ha), dim=1)
-        u = torch.matmul(i, pi).squeeze(2).squeeze(1) + q
-        return i, u
+        u = torch.matmul(i, pi).squeeze(2) + q
+        return u

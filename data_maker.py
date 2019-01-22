@@ -1,5 +1,5 @@
 import os
-from collections import defaultdict
+from collections import defaultdict, Counter
 import numpy as np
 import json
 import re
@@ -13,8 +13,18 @@ home = str(Path.home())
 modes = ['train', 'val']
 
 
-def make_questions(data_dir, dataset):
+def make_questions(data_dir, dataset, top_k=None):
     print(f"Start making {dataset} data pickle")
+    if top_k and (dataset == 'vqa2' or dataset == 'vqa1'):
+        answer_corpus = list()
+        for mode in modes:
+            annotation_file = os.path.join(data_dir, dataset, 'v2_mscoco_{}2014_annotations.json'.format(mode))
+            with open(annotation_file) as f:
+                annotations = json.load(f)["annotations"]
+            for q_obj in annotations:
+                answer_word = q_obj["multiple_choice_answer"]
+                answer_corpus.append(answer_word)
+        top_k_words = Counter(answer_corpus).most_common(top_k).keys()
     query = 'type' if dataset == 'sample' else 'function'
     q_corpus = set()
     a_corpus = set()
@@ -36,9 +46,9 @@ def make_questions(data_dir, dataset):
                 q_type = question['program'][-1][query]
                 qt_corpus.add(q_type)
                 qa_list[mode].append((image_dir, image_id, q_words, a_text, [q_type]))
-        elif dataset == 'vqa2':
+        elif dataset == 'vqa2' or dataset == 'vqa1':
             question_list = {}
-            question_file = os.path.join(data_dir, dataset, 'v2_OpenEnded_mscoco_{}2014_questions.json'.format(mode))
+            question_file = os.path.join(data_dir, dataset, f'v2_OpenEnded_mscoco_{mode}2014_questions.json')
             with open(question_file) as f:
                 questions = json.load(f)["questions"]
             for question in questions:
@@ -47,18 +57,21 @@ def make_questions(data_dir, dataset):
             with open(annotation_file) as f:
                 annotations = json.load(f)["annotations"]
             for q_obj in annotations:
-                image_id = q_obj['image_id']
-                image_dir = f'COCO_{mode}2014_{str(image_id).zfill(12)}.jpg'
-                question_text = question_list[q_obj['question_id']]
-                question_words = re.sub('[^0-9A-Za-z ]+', "", question_text).lower().split(' ')
-                question_type = q_obj['question_type']
                 answer_word = q_obj["multiple_choice_answer"]
-                answer_type = q_obj["answer_type"]
-                q_corpus.update(question_words)
-                a_corpus.add(answer_word)
-                qt_corpus.add(question_type)
-                qt_corpus.add(answer_type)
-                qa_list[mode].append((image_dir, image_id, question_words, answer_word, [question_type, answer_type]))
+                if top_k and answer_word not in top_k_words:
+                    continue
+                else:
+                    image_id = q_obj['image_id']
+                    image_dir = f'COCO_{mode}2014_{str(image_id).zfill(12)}.jpg'
+                    question_text = question_list[q_obj['question_id']]
+                    question_words = re.sub('[^0-9A-Za-z ]+', "", question_text).lower().split(' ')
+                    question_type = q_obj['question_type']
+                    answer_type = q_obj["answer_type"]
+                    q_corpus.update(question_words)
+                    a_corpus.add(answer_word)
+                    qt_corpus.add(question_type)
+                    qt_corpus.add(answer_type)
+                    qa_list[mode].append((image_dir, image_id, question_words, answer_word, [question_type, answer_type]))
 
     word_to_idx = {"<pad>": 0, "<eos>": 1}
     idx_to_word = {0: "<pad>", 1: "<eos>"}
@@ -85,35 +98,38 @@ def make_questions(data_dir, dataset):
                  'question_type_to_idx': question_type_to_idx,
                  'idx_to_question_type': idx_to_question_type
                  }
-    with open(os.path.join(data_dir, dataset, 'data_dict.pkl'), 'wb') as file:
+    with open(os.path.join(data_dir, dataset, f'data_dict_{top_k}.pkl'), 'wb') as file:
         pickle.dump(data_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
-    print('data_dict.pkl saved')
+    print(f'data_dict_{top_k}.pkl saved')
     print(f"Start making {dataset} question data")
-    qa_idx_data = defaultdict(list)
     for mode in modes:
-        with h5py.File(os.path.join(data_dir, dataset, f'questions_{mode}.h5'), 'w') as f:
+        with h5py.File(os.path.join(data_dir, dataset, f'questions_{mode}_{top_k}.h5'), 'w') as f:
             q_dset = None
             for n, (image_dir, image_id, q_word_list, answer_word, types) in enumerate(qa_list[mode]):
                 if q_dset is None:
                     N = len(qa_list[mode])
                     dt = h5py.special_dtype(vlen=np.dtype('int32'))
                     q_dset = f.create_dataset('questions', (N,), dtype=dt)
+                    a_dset = f.create_dataset('answers', (N,), dtype='int32')
+                    qt_dset = f.create_dataset('question_types', (N, len(types)), dtype='int32')
+                    ii_dset = f.create_dataset('image_ids', (N,), dtype='int32')
                 q = [word_to_idx[word] for word in q_word_list]
                 q.append(1)
                 q_dset[n] = q
-                a = answer_word_to_idx[answer_word]
-                q_t = [question_type_to_idx[type] for type in types]
-                qa_idx_data[mode].append((image_dir, image_id, a, q_t))
-        with open(os.path.join(data_dir, dataset, 'data_{}.pkl'.format(mode)), 'wb') as file:
-            pickle.dump(qa_idx_data[mode], file, protocol=pickle.HIGHEST_PROTOCOL)
-        print('data_{}.pkl saved'.format(mode))
+                a_dset[n] = answer_word_to_idx[answer_word]
+                ii_dset[n] = image_id
+                qt_dset[n, :] = np.array([question_type_to_idx[type] for type in types])
+        #         qa_idx_data[mode].append((image_dir, image_id, a, q_t))
+        # with open(os.path.join(data_dir, dataset, 'data_{}_.pkl'.format(mode)), 'wb') as file:
+        #     pickle.dump(qa_idx_data[mode], file, protocol=pickle.HIGHEST_PROTOCOL)
+        print(f"questions_{mode}_{top_k}.h5' saved")
 
 
 def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
     print(f"Start making {dataset} image pickle")
     model_name = 'resnet152' if dataset == 'vqa2' else 'resnet101'
     image_type = 'jpg' if dataset == 'vqa2' else 'png'
-    stage = 3
+    stage = 3 if size <=300 else 4
     model = build_model(model_name, stage)
     img_size = size
     idx_dict = dict()
