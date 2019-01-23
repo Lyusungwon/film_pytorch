@@ -10,7 +10,7 @@ class RelationalNetwork(nn.Module):
             pretrained_weight = load_pretrained_embedding(args.word2idx, args.te_embedding)
         else:
             pretrained_weight = None
-        self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, pretrained_weight)
+        self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout, pretrained_weight)
         if args.cv_pretrained:
             self.visual_encoder = nn.Conv2d(1024, args.cv_filter, 1, 1)
         else:

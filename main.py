@@ -9,6 +9,7 @@ import dataloader
 from film import Film
 from san import San
 from rn import RelationalNetwork
+from mrn import Mrn
 from mlb import Mlb
 import wandb
 
@@ -28,6 +29,8 @@ elif args.model == 'san':
     model = San(args)
 elif args.model == 'rn':
     model = RelationalNetwork(args)
+elif args.model == 'mrn':
+    model = Mrn(args)
 elif args.model == 'mlb':
     model = Mlb(args)
 optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -59,6 +62,8 @@ def epoch(epoch_idx, is_train):
         loss = F.cross_entropy(output, answer)
         if is_train:
             loss.backward()
+            if args.gradient_clipping:
+                nn.utils.clip_grad_value_(model.parameters(), [-args.gradient_cliping, args.gradient_cliping])
             optimizer.step()
         pred = torch.max(output.data, 1)[1]
         correct = (pred == answer)

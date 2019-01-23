@@ -27,6 +27,7 @@ def get_config():
     model_arg.add_argument('--te-embedding', type=int, default=200)
     model_arg.add_argument('--te-hidden', type=int, default=512)
     model_arg.add_argument('--te-layer', type=int, default=1)
+    model_arg.add_argument('--te-dropout', type=float, default=0.0)
     # film
     model_arg.add_argument('--film-res-kernel', type=int, default=3)
     model_arg.add_argument('--film-res-layer', type=int, default=4)
@@ -42,15 +43,18 @@ def get_config():
     model_arg.add_argument('--rn-fp-hidden', type=int, default=256)
     model_arg.add_argument('--rn-fp-layer', type=int, default=3)
     model_arg.add_argument('--rn-fp-dropout', type=float, default=0.5)
-    # rn
+    # mrn
+    model_arg.add_argument('--mrn-hidden', type=int, default=1200)
+    model_arg.add_argument('--mrn-layer', type=int, default=3)
+    # mln
     model_arg.add_argument('--mlb-hidden', type=int, default=1200)
-    model_arg.add_argument('--mlb-layer', type=int, default=3)
+    model_arg.add_argument('--mlb-glimpse', type=int, default=2)
 
     data_arg = parser.add_argument_group('Data')
     data_arg.add_argument('--data-directory', type=str, default=os.path.join(home, 'data'), metavar='N', help='directory of data')
     data_arg.add_argument('--dataset', type=str, default='clevr')
-    data_arg.add_argument('--input-h', type=int, default=128)
-    data_arg.add_argument('--input-w', type=int, default=128)
+    data_arg.add_argument('--input-h', type=int, default=224)
+    data_arg.add_argument('--input-w', type=int, default=224)
     data_arg.add_argument('--top-k', type=int, default=0)
 
     train_arg = parser.add_argument_group('Train')
@@ -58,7 +62,7 @@ def get_config():
     train_arg.add_argument('--epochs', type=int, default=100, metavar='N', help='number of epochs to train (default: 100)')
     train_arg.add_argument('--lr', type=float, default=3e-4, metavar='N', help='learning rate (default: 3e-4)')
     train_arg.add_argument('--lr-reduce', action='store_true')
-    train_arg.add_argument('--weight-decay', type=float, default=1e-5)
+    train_arg.add_argument('--weight-decay', type=float, default=0)
     train_arg.add_argument('--log-directory', type=str, default=os.path.join(home, 'experiment'), metavar='N', help='log directory')
     train_arg.add_argument('--device', type=int, default=0, metavar='N', help='gpu number')
     train_arg.add_argument('--cpu-num', type=int, default=0, metavar='N', help='number of cpu')
@@ -68,8 +72,9 @@ def get_config():
     train_arg.add_argument('--log-interval', type=int, default=10, metavar='N', help='how many batches to wait before logging training status')
     train_arg.add_argument('--time-stamp', type=str, default=datetime.datetime.now().strftime("%y%m%d%H%M%S"), metavar='N', help='time of the run(no modify)')
     train_arg.add_argument('--memo', type=str, default='default', metavar='N', help='memo of the model')
-    train_arg.add_argument('--load-model', type=str, default=None, metavar='N', help='load previous model')
+    train_arg.add_argument('--load-model', type=str, default=None, help='load previous model')
     train_arg.add_argument('--wandb', action='store_true')
+    train_arg.add_argument('--gradient-clipping', type=float, default=0)
 
     args, unparsed = parser.parse_known_args()
 
@@ -85,9 +90,10 @@ def get_config():
     args.data_config = [args.input_h, args.input_w, args.cpu_num, args.cv_pretrained, args.top_k]
 
     config_list = [args.project, args.model, args.dataset, args.epochs, args.batch_size, args.lr,
+                   args.weight_decay, args.gradient_clipping,
                    args.device, args.multi_gpu, args.gpu_num] + args.data_config + \
         ['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
-         'te', args.te_pretrained, args.te_embedding, args.te_hidden, args.te_layer]
+         'te', args.te_pretrained, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout]
 
     if args.model == 'film':
         config_list = config_list + \
@@ -102,6 +108,12 @@ def get_config():
         config_list = config_list + \
             ['rn', args.rn_gt_hidden, args.rn_gt_layer, args.rn_fp_hidden, args.rn_fp_layer, args.rn_fp_dropout,
              args.memo]
+    elif args.model == 'mrn':
+        config_list = config_list + \
+            ['mrn', args.mrn_hidden, args.mrn_layer, args.memo]
+    elif args.model == 'mlb':
+        config_list = config_list + \
+            ['mlb', args.mlb_hidden, args.mlb_glimpse, args.memo]
 
     args.config = '_'.join(map(str, config_list))
     if args.load_model:

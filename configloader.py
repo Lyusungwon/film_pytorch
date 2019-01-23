@@ -20,8 +20,6 @@ def load_default_config(args):
         args.lr = 3e-4
         args.weight_decay = 1e-5
         args.top_k = 0
-        print(f"Default config for {args.model} loaded.")
-        return args
     elif args.model == 'san' and args.dataset == 'vqa2':
         args.cv_pretrained = True
         args.cv_filter = 1024
@@ -33,8 +31,6 @@ def load_default_config(args):
         args.input_h = 448
         args.input_w = 448
         args.top_k = 1000
-        print(f"Default config for {args.model} loaded.")
-        return args
     elif args.model == 'rn':
         args.cv_filter = 24
         args.cv_kernel = 3
@@ -54,21 +50,34 @@ def load_default_config(args):
         args.batch_size = 64
         args.lr = 2.5e-4
         args.top_k = 0
-        print(f"Default config for {args.model} loaded.")
-        return args
+    elif args.model == 'mrn' and args.dataset == 'vqa2':
+        args.cv_pretrained = True
+        args.cv_filter = 2048
+        args.te_embedding = 200
+        args.te_hidden = 2400
+        args.mrn_hidden = 1200
+        args.mrn_layer = 3
+        args.batch_size = 200
+        args.input_h = 448
+        args.input_w = 448
+        args.top_k = 1000
     elif args.model == 'mlb' and args.dataset == 'vqa2':
         args.cv_pretrained = True
         args.cv_filter = 2048
         args.te_embedding = 200
         args.te_hidden = 2400
+        args.te_dropout = 0.5
         args.mlb_hidden = 1200
-        args.mlb_layer = 3
-        args.batch_size = 200
+        args.mlb_glimpse = 2
+        args.batch_size = 100
+        args.lr = 3e-4
         args.input_h = 448
         args.input_w = 448
-        args.top_k = 1000
-        return args
-        print(f"Default config for {args.model} loaded.")
+        args.top_k = 2000
+        args.lr_reduce = True
+        args.gradient_clipping = 10.0
     else:
         print("Default config not found!")
         return args
+    print(f"Default config for {args.model} loaded.")
+    return args

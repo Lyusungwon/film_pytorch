@@ -1,8 +1,6 @@
 import torch
 from layers import *
 from utils import *
-import numpy as np
-# from utils import load_pretrained_embedding
 
 
 class Mlb(nn.Module):
@@ -10,55 +8,49 @@ class Mlb(nn.Module):
         super().__init__()
         self.cv_pretrained = args.cv_pretrained
         pretrained_weight = load_pretrained_embedding(args.word2idx, args.te_embedding) if args.te_pretrained else None
-        self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, pretrained_weight)
+        self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout, pretrained_weight)
         if not args.cv_pretrained:
             self.visual_encoder = Conv(args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm)
-            input_h, input_w = args.input_h, args.input_w
-            for _ in range(args.cv_layer):
-                input_h = int(np.ceil(input_h / args.cv_stride))
-                input_w = int(np.ceil(input_w / args.cv_stride))
-            object_num = input_h * input_w
-        else:
-            object_num = 14 * 14
-        self.first_block = MlbBlock(args.cv_filter, args.te_hidden, args.mlb_hidden, object_num)
-        self.blocks = nn.ModuleList([MlbBlock(args.cv_filter, args.mlb_hidden, args.mlb_hidden, object_num) for _ in range(args.mlb_layer - 1)])
-        self.fc = nn.Linear(args.mlb_hidden, args.a_size)
-
-    def forward(self, image, question, question_length):
-        if self.cv_pretrained:
-            x = image
-        else:
-            x = self.visual_encoder(image)
-        b, c, h, w = x.size()
-        x = x.view(b, c, -1).transpose(1, 2)
-        q = self.text_encoder(question, question_length)
-        h = self.first_block(q, x)
-        for block in self.blocks:
-            h = block(h, x)
-        logits = self.fc(h)
-        return logits
-
-
-class MlbBlock(nn.Module):
-    def __init__(self, i, q, h, object_num):
-        super().__init__()
-        self.qs = nn.Sequential(
+        q = args.te_hidden
+        i = args.cv_filter
+        h = args.mlb_hidden
+        g = args.mlb_glimpse
+        o = args.a_size
+        self.Uq = nn.Sequential(
             nn.Linear(q, h),
             nn.Tanh()
         )
-        self.vb = nn.Sequential(
+        self.Vf = nn.Sequential(
             nn.Linear(i, h),
             nn.Tanh(),
-            nn.Linear(h, h),
+        )
+        self.P1 = nn.Sequential(
+            nn.Linear(h, g),
+            nn.Softmax(dim=1)
+        )
+        self.Wq = nn.Sequential(
+            nn.Linear(q, h),
             nn.Tanh()
         )
-        self.fc = nn.Linear(object_num, 1)
-        self.res = nn.Linear(q, h)
+        self.Vv = nn.Sequential(
+            nn.Linear(g * h, h),
+            nn.Tanh(),
+        )
+        self.P2 = nn.Linear(h, o)
 
-    def forward(self, q, i):
-        objects = self.vb(i).transpose(1, 2)
-        question = self.qs(q).unsqueeze(2)
-        f = objects * question
-        res = self.res(q)
-        h = res + self.fc(f).squeeze(2)
-        return h
+    def forward(self, image, question, question_length):
+        if self.cv_pretrained:
+            i = image
+        else:
+            i = self.visual_encoder(image)
+        b, c, h, w = i.size()
+        i = i.view(b, c, -1).transpose(1, 2) # b o c
+        q = self.text_encoder(question, question_length)
+        i1 = self.Vf(i) # b o h
+        q1 = self.Uq(q).unsqueeze(1) # b 1 h
+        f = self.P1(i1 * q1).transpose(1, 2) # b g o
+        i2 = torch.matmul(f, i1).view(b, -1) # b g*h
+        i3 = self.Vv(i2) # b h
+        q2 = self.Wq(q) # b h
+        logits = self.P2(i3 * q2).squeeze(1) # b o
+        return logits
