@@ -63,8 +63,7 @@ def epoch(epoch_idx, is_train):
         if is_train:
             loss.backward()
             if args.gradient_clipping:
-                for param in model.parameters():
-                    nn.utils.clip_grad_value_(param, [-args.gradient_clipping, args.gradient_clipping])
+                nn.utils.clip_grad_value_(model.parameters(), args.gradient_clipping)
             optimizer.step()
         pred = torch.max(output.data, 1)[1]
         correct = (pred == answer)
