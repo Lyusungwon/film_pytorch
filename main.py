@@ -1,4 +1,5 @@
 import torch.optim as optim
+import torch.nn as nn
 import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 from utils import *
