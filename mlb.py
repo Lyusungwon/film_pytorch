@@ -19,7 +19,7 @@ class Mlb(nn.Module):
                 input_w = int(np.ceil(input_w / args.cv_stride))
             object_num = input_h * input_w
         else:
-            object_num = 64
+            object_num = 14 * 14
         self.first_block = MlbBlock(args.cv_filter, args.te_hidden, args.mlb_hidden, object_num)
         self.blocks = nn.ModuleList([MlbBlock(args.cv_filter, args.mlb_hidden, args.mlb_hidden, object_num) for _ in range(args.mlb_layer - 1)])
         self.fc = nn.Linear(args.mlb_hidden, args.a_size)
