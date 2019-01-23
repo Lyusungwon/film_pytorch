@@ -67,6 +67,8 @@ def load_default_config(args):
         args.input_h = 448
         args.input_w = 448
         args.top_k = 1000
+        return args
+        print(f"Default config for {args.model} loaded.")
     else:
         print("Default config not found!")
         return args
