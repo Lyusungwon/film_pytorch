@@ -13,8 +13,9 @@ class RelationalNetwork(nn.Module):
             pretrained_weight = None
         self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout, pretrained_weight)
         if args.cv_pretrained:
+            filters = 1024 if args.dataset == 'clevr' else 2048
             net = []
-            net.append(nn.Conv2d(1024, args.cv_filter, args.cv_kernel, args.cv_stride, (args.cv_kernel - 1)//2, bias=not args.cv_batchnorm))
+            net.append(nn.Conv2d(filters, args.cv_filter, args.cv_kernel, args.cv_stride, (args.cv_kernel - 1)//2, bias=not args.cv_batchnorm))
             if args.cv_batchnorm:
                 net.append(nn.BatchNorm2d(args.cv_filter))
             net.append(nn.ReLU(inplace=True))
