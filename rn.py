@@ -1,3 +1,4 @@
+from torch import nn
 from layers import *
 from utils import load_pretrained_embedding, rn_encode, lower_sum
 
@@ -12,12 +13,12 @@ class RelationalNetwork(nn.Module):
             pretrained_weight = None
         self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout, pretrained_weight)
         if args.cv_pretrained:
-            net = nn.ModuleList()
+            net = []
             net.append(nn.Conv2d(1024, args.cv_filter, args.cv_kernel, args.cv_stride, (args.cv_kernel - 1)//2, bias=not args.cv_batchnorm))
             if args.cv_batchnorm:
-                net.append(nn.BatchNorm2d(filter))
+                net.append(nn.BatchNorm2d(args.cv_filter))
             net.append(nn.ReLU(inplace=True))
-            self.visual_encoder = nn.Sequential(net)
+            self.visual_encoder = nn.Sequential(*net)
         else:
             self.visual_encoder = Conv(args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm)
         self.g_theta = MLP((args.cv_filter + 2) * 2 + args.te_hidden, args.rn_gt_hidden, args.rn_gt_hidden, args.rn_gt_layer)

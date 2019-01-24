@@ -31,7 +31,7 @@ class Mrn(nn.Module):
             x = self.visual_encoder(image)
         b, c, h, w = x.size()
         x = x.view(b, c, -1).transpose(1, 2)
-        q = self.text_encoder(question, question_length)
+        _, q = self.text_encoder(question, question_length)
         h = self.first_block(q, x)
         for block in self.blocks:
             h = block(h, x)

@@ -31,7 +31,7 @@ def load_default_config(args):
         args.input_h = 448
         args.input_w = 448
         args.top_k = 1000
-    elif args.model == 'rn':
+    elif args.model == 'rn' and args.dataset == 'clevr':
         args.cv_filter = 24
         args.cv_kernel = 3
         args.cv_stride = 2

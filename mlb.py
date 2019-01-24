@@ -45,7 +45,7 @@ class Mlb(nn.Module):
             i = self.visual_encoder(image)
         b, c, h, w = i.size()
         i = i.view(b, c, -1).transpose(1, 2) # b o c
-        q = self.text_encoder(question, question_length)
+        _, q = self.text_encoder(question, question_length)
         i1 = self.Vf(i) # b o h
         q1 = self.Uq(q).unsqueeze(1) # b 1 h
         f = self.P1(i1 * q1).transpose(1, 2) # b g o

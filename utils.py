@@ -15,7 +15,10 @@ def timefn(fn):
 
 
 def positional_encode(images):
-    device = images.get_device()
+    try:
+        device = images.get_device()
+    except:
+        device = torch.device('cpu')
     n, c, h, w = images.size()
     x_coordinate = torch.linspace(-1, 1, w).view(1, 1, 1, w).expand(n, 1, h, w).to(device)
     y_coordinate = torch.linspace(-1, 1, h).view(1, 1, h, 1).expand(n, 1, h, w).to(device)
@@ -36,7 +39,10 @@ def baseline_encode(images, questions):
 
 
 def rn_encode(images, questions):
-    device = images.get_device()
+    try:
+        device = images.get_device()
+    except:
+        device = torch.device('cpu')
     n, c, h, w = images.size()
     o = h * w
     hd = questions.size(1)

@@ -15,8 +15,8 @@ class TextEncoder(nn.Module):
     def forward(self, question, question_length):
         embedded = self.embedding(question)
         packed_embedded = pack_padded_sequence(embedded, question_length, batch_first=True)
-        _, h_n = self.gru(packed_embedded)
-        return h_n.squeeze(0)
+        output, h_n = self.gru(packed_embedded)
+        return output, h_n.squeeze(0)
 
 
 class Conv(nn.Module):

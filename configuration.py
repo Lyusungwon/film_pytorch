@@ -21,7 +21,7 @@ def get_config():
     model_arg.add_argument('--cv-kernel', type=int, default=4)
     model_arg.add_argument('--cv-stride', type=int, default=2)
     model_arg.add_argument('--cv-layer', type=int, default=4)
-    model_arg.add_argument('--cv-batchnorm', action='store_false')
+    model_arg.add_argument('--cv-batchnorm', action='store_true')
     # Text Encoder
     model_arg.add_argument('--te-pretrained', action='store_true')
     model_arg.add_argument('--te-embedding', type=int, default=200)

@@ -25,7 +25,7 @@ class Film(nn.Module):
         if not self.cv_pretrained:
             image = image * 2 - 1
         x = self.visual_encoder(image)
-        code = self.text_encoder(question, question_length)
+        _, code = self.text_encoder(question, question_length)
         betagamma = self.fc(code).view(-1, self.layers, 2, self.filters)
         for n, block in enumerate(self.res_blocks):
             x = block(x, betagamma[:, n])

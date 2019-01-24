@@ -20,7 +20,7 @@ class San(nn.Module):
         x = self.visual_encoder(image)
         b, c, h, w = x.size()
         x = x.view(b, c, -1)
-        u = self.text_encoder(question, question_length)
+        _, u = self.text_encoder(question, question_length)
         for block in self.blocks:
             u = block(x, u)
         logits = self.fc(u)
