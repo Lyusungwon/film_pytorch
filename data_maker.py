@@ -118,7 +118,7 @@ def make_questions(data_dir, dataset, top_k=None):
     for mode in modes:
         with h5py.File(os.path.join(data_dir, dataset, f'questions_{mode}_{top_k}.h5'), 'w') as f:
             q_dset = None
-            for n, (image_dir, image_id, q_word_list, answer_word, types) in enumerate(qa_list[mode]):
+            for n, (image_dir, image_id, q_word_list, answer_word, q_type) in enumerate(qa_list[mode]):
                 if q_dset is None:
                     N = len(qa_list[mode])
                     dt = h5py.special_dtype(vlen=np.dtype('int32'))
@@ -131,7 +131,7 @@ def make_questions(data_dir, dataset, top_k=None):
                 q_dset[n] = q
                 a_dset[n] = answer_word_to_idx[answer_word]
                 ii_dset[n] = image_id
-                qt_dset[n] = question_type_to_idx
+                qt_dset[n] = question_type_to_idx[q_type]
         #         qa_idx_data[mode].append((image_dir, image_id, a, q_t))
         # with open(os.path.join(data_dir, dataset, 'data_{}_.pkl'.format(mode)), 'wb') as file:
         #     pickle.dump(qa_idx_data[mode], file, protocol=pickle.HIGHEST_PROTOCOL)
