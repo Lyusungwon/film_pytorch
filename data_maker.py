@@ -47,7 +47,7 @@ def make_questions(data_dir, dataset, top_k=None):
                 a_corpus.add(a_text)
                 q_type = question['program'][-1][query]
                 qt_corpus.add(q_type)
-                qa_list[mode].append((image_dir, image_id, q_words, a_text, [q_type]))
+                qa_list[mode].append((image_dir, image_id, q_words, a_text, q_type))
         elif dataset == 'vqa2' or dataset == 'vqa1':
             question_list = {}
             question_file = os.path.join(data_dir, dataset, f'v2_OpenEnded_mscoco_{mode}2014_questions.json')
@@ -74,7 +74,7 @@ def make_questions(data_dir, dataset, top_k=None):
                     a_corpus.add(answer_word)
                     # qt_corpus.add(question_type)
                     qt_corpus.add(answer_type)
-                    qa_list[mode].append((image_dir, image_id, question_words, answer_word, [question_type, answer_type]))
+                    qa_list[mode].append((image_dir, image_id, question_words, answer_word, answer_type))
         print(len(i_corpus))
     word_to_idx = {"<pad>": 0, "<eos>": 1}
     idx_to_word = {0: "<pad>", 1: "<eos>"}
