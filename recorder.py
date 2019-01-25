@@ -59,7 +59,6 @@ class Recorder:
         self.batch_start_time = time.time()
 
     def record_types(self, correct, types):
-        b, t = types.size()
         correct = correct.cpu()
         # for n in range(t):
         for i in range(self.qt_size):
