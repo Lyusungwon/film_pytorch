@@ -9,7 +9,7 @@ class Mrn(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.cv_pretrained = args.cv_pretrained
-        pretrained_weight = load_pretrained_embedding(args.word2idx, args.te_embedding) if args.te_pretrained else None
+        pretrained_weight = load_pretrained_embedding(args.word_to_idx, args.te_embedding) if args.te_pretrained else None
         self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout, pretrained_weight)
         if not args.cv_pretrained:
             self.visual_encoder = Conv(args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm)

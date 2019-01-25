@@ -7,10 +7,7 @@ class RelationalNetwork(nn.Module):
     def __init__(self, args):
         super(RelationalNetwork, self).__init__()
         self.cv_pretrained = args.cv_pretrained
-        if args.te_pretrained:
-            pretrained_weight = load_pretrained_embedding(args.word2idx, args.te_embedding)
-        else:
-            pretrained_weight = None
+        pretrained_weight = load_pretrained_embedding(args.word_to_idx, args.te_embedding) if args.te_pretrained else None
         self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout, pretrained_weight)
         if args.cv_pretrained:
             filters = 1024 if args.dataset == 'clevr' else 2048
