@@ -20,6 +20,7 @@ def load_default_config(args):
         args.lr = 3e-4
         args.weight_decay = 1e-5
         args.top_k = 0
+        args.lr_reduce = True
     elif args.model == 'san' and args.dataset == 'vqa2':
         args.cv_pretrained = True
         args.cv_filter = 1024
@@ -31,6 +32,7 @@ def load_default_config(args):
         args.input_h = 448
         args.input_w = 448
         args.top_k = 1000
+        args.lr_reduce = True
     elif args.model == 'rn' and args.dataset == 'clevr':
         args.cv_filter = 24
         args.cv_kernel = 3
@@ -49,6 +51,7 @@ def load_default_config(args):
         args.input_w = 128
         args.batch_size = 64
         args.lr = 2.5e-4
+        args.lr_reduce = True
         args.top_k = 0
     elif args.model == 'mrn' and args.dataset == 'vqa2':
         args.cv_pretrained = True
@@ -61,6 +64,7 @@ def load_default_config(args):
         args.input_h = 448
         args.input_w = 448
         args.top_k = 1000
+        args.lr_reduce = True
     elif args.model == 'mlb' and args.dataset == 'vqa2':
         args.cv_pretrained = True
         args.cv_filter = 2048
