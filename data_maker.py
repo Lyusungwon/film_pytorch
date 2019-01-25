@@ -67,15 +67,15 @@ def make_questions(data_dir, dataset, top_k=None):
                     image_dir = f'COCO_{mode}2014_{str(image_id).zfill(12)}.jpg'
                     question_text = question_list[q_obj['question_id']]
                     question_words = re.sub('[^0-9A-Za-z ]+', "", question_text).lower().split(' ')
-                    question_type = q_obj['question_type']
+                    # question_type = q_obj['question_type']
                     answer_type = q_obj["answer_type"]
                     q_corpus.update(question_words)
                     i_corpus.add(image_id)
                     a_corpus.add(answer_word)
-                    qt_corpus.add(question_type)
+                    # qt_corpus.add(question_type)
                     qt_corpus.add(answer_type)
                     qa_list[mode].append((image_dir, image_id, question_words, answer_word, [question_type, answer_type]))
-        print()
+        print(len(i_corpus))
     word_to_idx = {"<pad>": 0, "<eos>": 1}
     idx_to_word = {0: "<pad>", 1: "<eos>"}
     answer_word_to_idx = dict()

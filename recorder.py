@@ -75,11 +75,11 @@ class Recorder:
     def record_types(self, correct, types):
         b, t = types.size()
         correct = correct.cpu()
-        for n in range(t):
-            for i in range(self.qt_size):
-                idx = types[:, n] == i
-                self.per_question["correct"][i] += (correct * idx).sum().item()
-                self.per_question["number"][i] += idx.sum().item()
+        # for n in range(t):
+        for i in range(self.qt_size):
+            idx = types[:, -1] == i
+            self.per_question["correct"][i] += (correct * idx).sum().item()
+            self.per_question["number"][i] += idx.sum().item()
 
     def log_batch(self, batch_idx, batch_size):
         print('Train Batch: {} [{}/{} ({:.0f}%)] Loss: {:.4f} / Time: {:.4f} / Acc: {:.4f}'.format(
