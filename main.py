@@ -44,6 +44,7 @@ if args.multi_gpu:
 model = model.to(device)
 if args.wandb:
     wandb.init(args.project)
+    wandb.config.update(args)
     wandb.watch(model)
 
 

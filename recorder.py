@@ -3,6 +3,34 @@ import time
 from collections import defaultdict
 import wandb
 
+clevr_q_dict = {'exist': 10,
+                    'count': 20,
+                    'equal_integer': 30,
+                    'less_than': 31,
+                    'greater_than': 32,
+                    'query_size': 40,
+                    'query_color': 41,
+                    'query_material': 42,
+                    'query_shape': 43,
+                    'equal_size': 50,
+                    'equal_color': 51,
+                    'equal_material': 52,
+                    'equal_shape': 53
+                    }
+{0: 'count',
+ 1: 'equal_color',
+ 2: 'equal_integer',
+ 3: 'equal_material',
+ 4: 'equal_shape',
+ 5: 'equal_size',
+ 6: 'exist',
+ 7: 'greater_than',
+ 8: 'less_than',
+ 9: 'query_color',
+ 10: 'query_material',
+ 11: 'query_shape',
+ 12: 'query_size'}
+
 class Recorder:
     def __init__(self, writer, args, batch_record_idx=0):
         self.writer = writer
@@ -120,6 +148,11 @@ class Recorder:
             text.append(f'Quesetion {j}: {question} / Answer: {answer}')
         self.writer.add_image('Image', torch.cat([image[:n]]), self.epoch_idx)
         self.writer.add_text('QA', '\n'.join(text), self.epoch_idx)
+        if self.wandb:
+            wandb.log({"Images": torch.cat([image[:n]]),
+                       "QA": '\n'.join(text)})
+
 
     def get_epoch_loss(self):
         return self.epoch_loss / self.dataset_size
+

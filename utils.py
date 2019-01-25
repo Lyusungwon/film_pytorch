@@ -146,3 +146,9 @@ def load_dict(args):
 #     elif args.model == 'rn':
 #         model = RelationalNetwork(args)
 #     return model
+if __name__ == '__main__':
+    dict_file = os.path.join('/home/sungwonlyu/data', 'clevr', 'data_dict_0.pkl')
+    with open(dict_file, 'rb') as file:
+        data_dict = pickle.load(file)
+    idx_to_question_type = data_dict['idx_to_question_type']
+    print(idx_to_question_type)

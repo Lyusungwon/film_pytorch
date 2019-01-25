@@ -26,6 +26,7 @@ def make_questions(data_dir, dataset, top_k=None):
                 answer_corpus.append(answer_word)
         top_k_words = set([i for (i, j) in Counter(answer_corpus).most_common(top_k)])
     query = 'type' if dataset == 'sample' else 'function'
+    i_corpus = set()
     q_corpus = set()
     a_corpus = set()
     qt_corpus = set()
@@ -39,7 +40,8 @@ def make_questions(data_dir, dataset, top_k=None):
                 image_dir = question['image_filename']
                 image_id = int(image_dir.split('.')[0].split('_')[-1])
                 q_text = question['question'].lower()
-                q_words = re.sub('[^;A-Za-z ]+', "", q_text).split(' ')
+                q_text = re.sub(";", " ;", q_text)
+                q_words = re.sub("[^;A-Za-z ]+", "", q_text).split(' ')
                 q_corpus.update(q_words)
                 a_text = str(question['answer']).lower().strip()
                 a_corpus.add(a_text)
@@ -68,11 +70,12 @@ def make_questions(data_dir, dataset, top_k=None):
                     question_type = q_obj['question_type']
                     answer_type = q_obj["answer_type"]
                     q_corpus.update(question_words)
+                    i_corpus.add(image_id)
                     a_corpus.add(answer_word)
                     qt_corpus.add(question_type)
                     qt_corpus.add(answer_type)
                     qa_list[mode].append((image_dir, image_id, question_words, answer_word, [question_type, answer_type]))
-
+        print()
     word_to_idx = {"<pad>": 0, "<eos>": 1}
     idx_to_word = {0: "<pad>", 1: "<eos>"}
     answer_word_to_idx = dict()
@@ -231,18 +234,4 @@ if __name__ =='__main__':
     # make_questions(data_directory, 'sample')
     # make_images(data_directory, 'sample', (224, 224), 5, 100)
 
-# question_type_dict = {'exist': 10,
-#                     'count': 20,
-#                     'equal_integer': 30,
-#                     'less_than': 31,
-#                     'greater_than': 32,
-#                     'query_size': 40,
-#                     'query_color': 41,
-#                     'query_material': 42,
-#                     'query_shape': 43,
-#                     'equal_size': 50,
-#                     'equal_color': 51,
-#                     'equal_material': 52,
-#                     'equal_shape': 53
-#                     }
 
