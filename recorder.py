@@ -3,33 +3,20 @@ import time
 from collections import defaultdict
 import wandb
 
-clevr_q_dict = {'exist': 10,
-                    'count': 20,
-                    'equal_integer': 30,
-                    'less_than': 31,
-                    'greater_than': 32,
-                    'query_size': 40,
-                    'query_color': 41,
-                    'query_material': 42,
-                    'query_shape': 43,
-                    'equal_size': 50,
-                    'equal_color': 51,
-                    'equal_material': 52,
-                    'equal_shape': 53
-                    }
-{0: 'count',
- 1: 'equal_color',
- 2: 'equal_integer',
- 3: 'equal_material',
- 4: 'equal_shape',
- 5: 'equal_size',
- 6: 'exist',
- 7: 'greater_than',
- 8: 'less_than',
- 9: 'query_color',
- 10: 'query_material',
- 11: 'query_shape',
- 12: 'query_size'}
+clevr_q_dict = {0: 'count',
+                1: 'compare_attribute',
+                2: 'compare_integer',
+                3: 'compare_attribute',
+                4: 'compare_attribute',
+                5: 'compare_attribute',
+                6: 'exist',
+                7: 'compare_integer',
+                8: 'compare_integer',
+                9: 'query_attribute',
+                10: 'query_attribute',
+                11: 'query_attribute',
+                12: 'query_attribute'}
+
 
 class Recorder:
     def __init__(self, writer, args, batch_record_idx=0):
