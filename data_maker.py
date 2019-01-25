@@ -12,6 +12,19 @@ from scipy.misc import imread, imresize
 home = str(Path.home())
 modes = ['train', 'val']
 
+clevr_q_dict = {'count': 'count',
+                'equal_size': 'compare_attribute',
+                'equal_integer': 'compare_integer',
+                'equal_shape': 'compare_attribute',
+                'equal_color': 'compare_attribute',
+                'equal_material': 'compare_attribute',
+                'exit': 'exist',
+                'less_than': 'compare_integer',
+                'greater_than': 'compare_integer',
+                'query_size': 'query_attribute',
+                'query_shape': 'query_attribute',
+                'query_material': 'query_attribute',
+                'query_color': 'query_attribute'}
 
 def make_questions(data_dir, dataset, top_k=None):
     print(f"Start making {dataset} data pickle")
@@ -26,7 +39,6 @@ def make_questions(data_dir, dataset, top_k=None):
                 answer_corpus.append(answer_word)
         top_k_words = set([i for (i, j) in Counter(answer_corpus).most_common(top_k)])
     query = 'type' if dataset == 'sample' else 'function'
-    i_corpus = set()
     q_corpus = set()
     a_corpus = set()
     qt_corpus = set()
@@ -45,7 +57,7 @@ def make_questions(data_dir, dataset, top_k=None):
                 q_corpus.update(q_words)
                 a_text = str(question['answer']).lower().strip()
                 a_corpus.add(a_text)
-                q_type = question['program'][-1][query]
+                q_type = clevr_q_dict[question['program'][-1][query]]
                 qt_corpus.add(q_type)
                 qa_list[mode].append((image_dir, image_id, q_words, a_text, q_type))
         elif dataset == 'vqa2' or dataset == 'vqa1':
@@ -70,12 +82,10 @@ def make_questions(data_dir, dataset, top_k=None):
                     # question_type = q_obj['question_type']
                     answer_type = q_obj["answer_type"]
                     q_corpus.update(question_words)
-                    i_corpus.add(image_id)
                     a_corpus.add(answer_word)
                     # qt_corpus.add(question_type)
                     qt_corpus.add(answer_type)
                     qa_list[mode].append((image_dir, image_id, question_words, answer_word, answer_type))
-        print(len(i_corpus))
     word_to_idx = {"<pad>": 0, "<eos>": 1}
     idx_to_word = {0: "<pad>", 1: "<eos>"}
     answer_word_to_idx = dict()
@@ -114,14 +124,14 @@ def make_questions(data_dir, dataset, top_k=None):
                     dt = h5py.special_dtype(vlen=np.dtype('int32'))
                     q_dset = f.create_dataset('questions', (N,), dtype=dt)
                     a_dset = f.create_dataset('answers', (N,), dtype='int32')
-                    qt_dset = f.create_dataset('question_types', (N, len(types)), dtype='int32')
+                    qt_dset = f.create_dataset('question_types', (N, ), dtype='int32')
                     ii_dset = f.create_dataset('image_ids', (N,), dtype='int32')
                 q = [word_to_idx[word] for word in q_word_list]
                 q.append(1)
                 q_dset[n] = q
                 a_dset[n] = answer_word_to_idx[answer_word]
                 ii_dset[n] = image_id
-                qt_dset[n, :] = np.array([question_type_to_idx[type] for type in types])
+                qt_dset[n] = question_type_to_idx
         #         qa_idx_data[mode].append((image_dir, image_id, a, q_t))
         # with open(os.path.join(data_dir, dataset, 'data_{}_.pkl'.format(mode)), 'wb') as file:
         #     pickle.dump(qa_idx_data[mode], file, protocol=pickle.HIGHEST_PROTOCOL)

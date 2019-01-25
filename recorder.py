@@ -3,20 +3,6 @@ import time
 from collections import defaultdict
 import wandb
 
-clevr_q_dict = {0: 'count',
-                1: 'compare_attribute',
-                2: 'compare_integer',
-                3: 'compare_attribute',
-                4: 'compare_attribute',
-                5: 'compare_attribute',
-                6: 'exist',
-                7: 'compare_integer',
-                8: 'compare_integer',
-                9: 'query_attribute',
-                10: 'query_attribute',
-                11: 'query_attribute',
-                12: 'query_attribute'}
-
 
 class Recorder:
     def __init__(self, writer, args, batch_record_idx=0):
@@ -77,7 +63,7 @@ class Recorder:
         correct = correct.cpu()
         # for n in range(t):
         for i in range(self.qt_size):
-            idx = types[:, -1] == i
+            idx = types == i
             self.per_question["correct"][i] += (correct * idx).sum().item()
             self.per_question["number"][i] += idx.sum().item()
 
