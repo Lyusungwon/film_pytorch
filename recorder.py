@@ -115,13 +115,13 @@ class Recorder:
         n = min(image.size()[0], 4)
         print(image.size())
         print(image[:n].size())
-        print(torch.cat([image[:n]]).size())
+        print(torch.cat([image[:n]], 0).size())
         question_text = [' '.join([self.idx_to_word[i] for i in q]) for q in question.cpu().numpy()[:n]]
         answer_text = [self.answer_idx_to_word[a] for a in answer.cpu().numpy()[:n]]
         text = []
         for j, (question, answer) in enumerate(zip(question_text, answer_text)):
             text.append(f'Quesetion {j}: {question} / Answer: {answer}')
-        self.writer.add_image('Image', torch.cat([image[:n]]), self.epoch_idx)
+        self.writer.add_image('Image', torch.cat([image[:n]], 0), self.epoch_idx)
         self.writer.add_text('QA', '\n'.join(text), self.epoch_idx)
         if self.wandb:
             wandb.log({"Images": torch.cat([image[:n]]),
