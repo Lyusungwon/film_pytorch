@@ -112,6 +112,9 @@ class Recorder:
             wandb.log(per_question_log)
 
     def log_data(self, image, question, answer):
+        print(image.size())
+        print(image[:n].size())
+        print(torch.cat([image[:n]]).size())
         n = min(self.batch_size, 4)
         question_text = [' '.join([self.idx_to_word[i] for i in q]) for q in question.cpu().numpy()[:n]]
         answer_text = [self.answer_idx_to_word[a] for a in answer.cpu().numpy()[:n]]
