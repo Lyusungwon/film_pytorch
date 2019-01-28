@@ -69,7 +69,7 @@ def rn_encode(images, questions):
 
 def lower_sum(relations):
     try:
-        device = images.get_device()
+        device = relations.get_device()
     except:
         device = torch.device('cpu')
     n, h, w, l = relations.size()
