@@ -42,10 +42,6 @@ if args.load_model:
 if args.multi_gpu:
     model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
 model = model.to(device)
-if args.wandb:
-    wandb.init(args.project)
-    wandb.config.update(args)
-    wandb.watch(model)
 
 
 def epoch(epoch_idx, is_train):
@@ -83,7 +79,8 @@ if __name__ == '__main__':
     writer = SummaryWriter(args.log)
     recorder = Recorder(writer, args, batch_record_idx)
     for epoch_idx in range(start_epoch, args.epochs):
-        # epoch(epoch_idx, is_train=True)
+        epoch(epoch_idx, is_train=True)
         epoch(epoch_idx, is_train=False)
         save_checkpoint(epoch_idx, model.module if args.multi_gpu else model, optimizer, args, recorder.batch_record_idx)
+    recorder.finish()
     writer.close()

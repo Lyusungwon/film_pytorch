@@ -14,6 +14,15 @@ def timefn(fn):
     return wrap
 
 
+def is_file_exist(file):
+    if os.path.isfile(file):
+        print(f"Data {file} exist")
+        return True
+    else:
+        print(f"Data {file} does not exist")
+        return False
+
+
 def positional_encode(images):
     try:
         device = images.get_device()
@@ -59,7 +68,10 @@ def rn_encode(images, questions):
 
 
 def lower_sum(relations):
-    device = relations.get_device()
+    try:
+        device = images.get_device()
+    except:
+        device = torch.device('cpu')
     n, h, w, l = relations.size()
     mask = torch.ones([h, w]).tril().view(1, h, w, 1).to(device, dtype=torch.uint8)
     relations = torch.masked_select(relations, mask).view(n, -1, l)

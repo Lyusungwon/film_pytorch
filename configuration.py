@@ -9,25 +9,48 @@ home = str(Path.home())
 
 def get_config():
     parser = argparse.ArgumentParser(description='parser')
+    parser.add_argument('--project', type=str, default='vqa')
+    parser.add_argument('--model', type=str, choices=['rn', 'san', 'mrn', 'mlb', 'film'])
+
+    data_arg = parser.add_argument_group('Data')
+    data_arg.add_argument('--data-directory', type=str, default=os.path.join(home, 'data'), help='directory of data')
+    data_arg.add_argument('--dataset', type=str)
+    data_arg.add_argument('--input-h', type=int)
+    data_arg.add_argument('--input-w', type=int)
+    data_arg.add_argument('--top-k', type=int)
+
+    train_arg = parser.add_argument_group('Train')
+    train_arg.add_argument('--batch-size', type=int)
+    train_arg.add_argument('--epochs', type=int)
+    train_arg.add_argument('--lr', type=float)
+    train_arg.add_argument('--lr-reduce', action='store_true')
+    train_arg.add_argument('--weight-decay', type=float)
+    train_arg.add_argument('--gradient-clipping', type=float)
+    train_arg.add_argument('--log-directory', type=str, default=os.path.join(home, 'experiment'), metavar='N', help='log directory')
+    train_arg.add_argument('--device', type=int, default=0, metavar='N', help='gpu number')
+    train_arg.add_argument('--cpu-num', type=int, default=0, metavar='N', help='number of cpu')
+    train_arg.add_argument('--multi-gpu', action='store_true')
+    train_arg.add_argument('--gpu-num', type=int, default=4, metavar='N', help='number of cpu')
+    train_arg.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
+    train_arg.add_argument('--log-interval', type=int, default=10, metavar='N', help='how many batches to wait before logging training status')
+    train_arg.add_argument('--timestamp', type=str, default=datetime.datetime.now().strftime("%y%m%d%H%M%S"), metavar='N', help='time of the run(no modify)')
+    train_arg.add_argument('--memo', type=str, default='default', metavar='N', help='memo of the model')
+    train_arg.add_argument('--load-model', type=str, default=None, help='load previous model')
 
     model_arg = parser.add_argument_group('Model')
-    model_arg.add_argument('--project', type=str, default='vqa')
-    model_arg.add_argument('--model', type=str, default='rn')
-    # Load configuration of the paper
-    model_arg.add_argument('--load-default', action='store_true')
     # Convolution
     model_arg.add_argument('--cv-pretrained', action='store_true')
-    model_arg.add_argument('--cv-filter', type=int, default=512)
-    model_arg.add_argument('--cv-kernel', type=int, default=4)
-    model_arg.add_argument('--cv-stride', type=int, default=2)
-    model_arg.add_argument('--cv-layer', type=int, default=4)
+    model_arg.add_argument('--cv-filter', type=int)
+    model_arg.add_argument('--cv-kernel', type=int)
+    model_arg.add_argument('--cv-stride', type=int)
+    model_arg.add_argument('--cv-layer', type=int)
     model_arg.add_argument('--cv-batchnorm', action='store_true')
     # Text Encoder
     model_arg.add_argument('--te-pretrained', action='store_true')
-    model_arg.add_argument('--te-embedding', type=int, default=200)
-    model_arg.add_argument('--te-hidden', type=int, default=512)
-    model_arg.add_argument('--te-layer', type=int, default=1)
-    model_arg.add_argument('--te-dropout', type=float, default=0.0)
+    model_arg.add_argument('--te-embedding', type=int)
+    model_arg.add_argument('--te-hidden', type=int)
+    model_arg.add_argument('--te-layer', type=int)
+    model_arg.add_argument('--te-dropout', type=float)
     # film
     model_arg.add_argument('--film-res-kernel', type=int)
     model_arg.add_argument('--film-res-layer', type=int)
@@ -50,36 +73,8 @@ def get_config():
     model_arg.add_argument('--mlb-hidden', type=int)
     model_arg.add_argument('--mlb-glimpse', type=int)
 
-    data_arg = parser.add_argument_group('Data')
-    data_arg.add_argument('--data-directory', type=str, default=os.path.join(home, 'data'), metavar='N', help='directory of data')
-    data_arg.add_argument('--dataset', type=str, default='clevr')
-    data_arg.add_argument('--input-h', type=int, default=224)
-    data_arg.add_argument('--input-w', type=int, default=224)
-    data_arg.add_argument('--top-k', type=int, default=0)
-
-    train_arg = parser.add_argument_group('Train')
-    train_arg.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default: 64)')
-    train_arg.add_argument('--epochs', type=int, default=100, metavar='N', help='number of epochs to train (default: 100)')
-    train_arg.add_argument('--lr', type=float, default=3e-4, metavar='N', help='learning rate (default: 3e-4)')
-    train_arg.add_argument('--lr-reduce', action='store_true')
-    train_arg.add_argument('--weight-decay', type=float, default=0)
-    train_arg.add_argument('--log-directory', type=str, default=os.path.join(home, 'experiment'), metavar='N', help='log directory')
-    train_arg.add_argument('--device', type=int, default=0, metavar='N', help='gpu number')
-    train_arg.add_argument('--cpu-num', type=int, default=0, metavar='N', help='number of cpu')
-    train_arg.add_argument('--multi-gpu', action='store_true')
-    train_arg.add_argument('--gpu-num', type=int, default=4, metavar='N', help='number of cpu')
-    train_arg.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
-    train_arg.add_argument('--log-interval', type=int, default=10, metavar='N', help='how many batches to wait before logging training status')
-    train_arg.add_argument('--time-stamp', type=str, default=datetime.datetime.now().strftime("%y%m%d%H%M%S"), metavar='N', help='time of the run(no modify)')
-    train_arg.add_argument('--memo', type=str, default='default', metavar='N', help='memo of the model')
-    train_arg.add_argument('--load-model', type=str, default=None, help='load previous model')
-    train_arg.add_argument('--wandb', action='store_true')
-    train_arg.add_argument('--gradient-clipping', type=float, default=0)
-
     args, unparsed = parser.parse_known_args()
-
-    if args.load_default:
-        args = load_default_config(args)
+    args = load_default_config(args)
 
     if not torch.cuda.is_available():
         args.device = torch.device('cpu')
@@ -118,9 +113,9 @@ def get_config():
     args.config = '_'.join(map(str, config_list))
     if args.load_model:
         args.log = os.path.join(args.log_directory, args.project, args.load_model)
-        args.time_stamp = args.load_model[:12]
+        args.timestamp = args.load_model[:12]
     else:
-        args.log = os.path.join(args.log_directory, args.project, args.time_stamp + args.config)
+        args.log = os.path.join(args.log_directory, args.project, args.timestamp + args.config)
 
     print(f"Config: {args.config}")
     return args

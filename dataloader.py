@@ -7,6 +7,7 @@ import pickle
 from PIL import Image
 from pathlib import Path
 from data_maker import make_questions, make_images
+from utils import is_file_exist
 import h5py
 
 home = str(Path.home())
@@ -63,20 +64,13 @@ class VQA(Dataset):
                 self.image_dir = os.path.join(data_dir, dataset, 'images', f'{self.mode}')
             elif dataset == 'vqa2':
                 self.image_dir = os.path.join(data_dir, dataset, f'{self.mode}2014')
-        if not self.is_file_exits(self.question_file):
+        if not is_file_exist(self.question_file):
             make_questions(data_dir, dataset, top_k)
         if cv_pretrained:
-            if not self.is_file_exits(self.image_dir):
+            if not is_file_exist(self.image_dir):
                 make_images(data_dir, dataset, size)
         self.load_data()
 
-    def is_file_exits(self, file):
-        if os.path.isfile(file):
-            print(f"Data {file} exist")
-            return True
-        else:
-            print(f"Data {file} does not exist")
-            return False
 
     def load_data(self):
         # print(f"Start loading {self.data_file}")
