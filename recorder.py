@@ -18,7 +18,7 @@ class Recorder:
         self.answer_idx_to_word = args.answer_idx_to_word
         self.qt_size = args.qt_size
         self.batch_record_idx = batch_record_idx
-        self.csv_file = os.path.join(args.log_directory, args.dataset, f"{args.dataset}_log.csv")
+        self.csv_file = os.path.join(args.log_directory, args.project, f"{args.project}_log.csv")
         self.rolling_average = 5
         self.logs = defaultdict(lambda: deque(maxlen=self.rolling_average))
         self.epoch_idx = None
