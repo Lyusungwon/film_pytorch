@@ -28,7 +28,7 @@ def get_config():
     train_arg.add_argument('--gradient-clipping', type=float)
     train_arg.add_argument('--log-directory', type=str, default=os.path.join(home, 'experiment'), metavar='N', help='log directory')
     train_arg.add_argument('--device', type=int, default=0, metavar='N', help='gpu number')
-    train_arg.add_argument('--cpu-num', type=int, default=0, metavar='N', help='number of cpu')
+    train_arg.add_argument('--cpu-num', type=int, default=8, metavar='N', help='number of cpu')
     train_arg.add_argument('--multi-gpu', action='store_true')
     train_arg.add_argument('--gpu-num', type=int, default=4, metavar='N', help='number of cpu')
     train_arg.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')

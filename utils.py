@@ -1,5 +1,6 @@
 import os
 import torch
+import torch.nn as nn
 import time
 import pickle
 
@@ -120,18 +121,18 @@ def load_pretrained_embedding(word2idx, embedding_dim):
     return embedding
 
 
-# def load_pretrained_conv(output_channel=None):
-#     import torchvision.models as models
-#     model = models.resnet101(pretrained=True)
-#     feature_extractor = list(model.children())[:-3]
-#     for part in feature_extractor:
-#         for param in part.parameters():
-#             param.requires_grad = False
-#     if output_channel:
-#         feature_extractor.append(nn.Conv2d(1024, output_channel, 1, 1))
-#     feature_extractor = nn.Sequential(*feature_extractor)
-#     print("Loaded pretrained feature extraction model.")
-#     return feature_extractor
+def load_pretrained_conv():
+    import torchvision.models as models
+    model = models.resnet101(pretrained=True)
+    feature_extractor = list(model.children())[:-1]
+    for part in feature_extractor:
+        for param in part.parameters():
+            param.requires_grad = False
+    # if output_channel:
+    #     feature_extractor.append(nn.Conv2d(1024, output_channel, 1, 1))
+    feature_extractor = nn.Sequential(*feature_extractor)
+    print("Loaded pretrained feature extraction model.")
+    return feature_extractor
 
 
 def load_dict(args):

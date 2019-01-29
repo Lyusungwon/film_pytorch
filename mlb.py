@@ -8,7 +8,7 @@ class Mlb(nn.Module):
         super().__init__()
         self.cv_pretrained = args.cv_pretrained
         pretrained_weight = load_pretrained_embedding(args.word_to_idx, args.te_embedding) if args.te_pretrained else None
-        self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout, pretrained_weight)
+        self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_type, args.te_hidden, args.te_layer, args.te_dropout, pretrained_weight)
         if args.cv_pretrained:
             filters = 2048 if args.dataset == 'vqa2' else 1024
         else:
@@ -48,7 +48,7 @@ class Mlb(nn.Module):
             i = self.visual_encoder(image)
         b, c, h, w = i.size()
         i = i.view(b, c, -1).transpose(1, 2) # b o c
-        _, q = self.text_encoder(question, question_length)
+        _, q = self.text_encoder(question, question_length) # b q
         i1 = self.Vf(i) # b o h
         q1 = self.Uq(q).unsqueeze(1) # b 1 h
         f = self.P1(i1 * q1).transpose(1, 2) # b g o

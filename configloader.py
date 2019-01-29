@@ -48,7 +48,7 @@ def load_default_config(args):
             "te_dropout": 0,
             "te_layer": 1,
             "san_layer": 2,
-            "san_k": 1024
+            "san_k": 512
         }
     elif args.model == 'rn':
         arg_dict = {
@@ -80,8 +80,8 @@ def load_default_config(args):
     elif args.model == 'mrn':
         arg_dict = {
             "dataset": "vqa2",
-            "input_h": 448,
-            "input_w": 448,
+            "input_h": 224,
+            "input_w": 224,
             "top_k": 1000,
             "batch_size": 200,
             "epochs": 100,
@@ -89,10 +89,7 @@ def load_default_config(args):
             "lr_reduce": True,
             "weight_decay": 0,
             "gradient_clipping": 0,
-            "cv_filter": 512,
-            "cv_kernel": 3,
-            "cv_stride": 2,
-            "cv_layer": 6,
+            "te_type" : 'gru',
             "te_embedding": 200,
             "te_hidden": 2400,
             "te_dropout": 0,

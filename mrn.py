@@ -2,7 +2,7 @@ import torch
 from layers import *
 from utils import *
 import numpy as np
-# from utils import load_pretrained_embeddingß
+from utils import load_pretrained_embedding
 
 
 class Mrn(nn.Module):
@@ -10,29 +10,18 @@ class Mrn(nn.Module):
         super().__init__()
         self.cv_pretrained = args.cv_pretrained
         pretrained_weight = load_pretrained_embedding(args.word_to_idx, args.te_embedding) if args.te_pretrained else None
-        self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout, pretrained_weight)
+        self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_type, args.te_hidden, args.te_layer, args.te_dropout, pretrained_weight)
         if args.cv_pretrained:
-            filters = 2048 if args.dataset == 'vqa2' else 1024
-            object_num = 14 * 14
+            raise
         else:
-            self.visual_encoder = Conv(args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm)
-            input_h, input_w = args.input_h, args.input_w
-            for _ in range(args.cv_layer):
-                input_h = int(np.ceil(input_h / args.cv_stride))
-                input_w = int(np.ceil(input_w / args.cv_stride))
-            object_num = input_h * input_w
-            filters = args.cv_filter
-        self.first_block = MrnBlock(filters, args.te_hidden, args.mrn_hidden, object_num)
-        self.blocks = nn.ModuleList([MrnBlock(filters, args.mrn_hidden, args.mrn_hidden, object_num) for _ in range(args.mrn_layer - 1)])
+            self.visual_encoder = load_pretrained_conv()
+            filters = 2048 if args.dataset == 'vqa2' else 1024
+        self.first_block = MrnBlock(filters, args.te_hidden, args.mrn_hidden)
+        self.blocks = nn.ModuleList([MrnBlock(filters, args.mrn_hidden, args.mrn_hidden) for _ in range(args.mrn_layer - 1)])
         self.fc = nn.Linear(args.mrn_hidden, args.a_size)
 
     def forward(self, image, question, question_length):
-        if self.cv_pretrained:
-            x = image
-        else:
-            x = self.visual_encoder(image)
-        b, c, h, w = x.size()
-        x = x.view(b, c, -1).transpose(1, 2)
+        x = self.visual_encoder(image).squeeze(3).squeeze(2)
         _, q = self.text_encoder(question, question_length)
         h = self.first_block(q, x)
         for block in self.blocks:
@@ -42,7 +31,7 @@ class Mrn(nn.Module):
 
 
 class MrnBlock(nn.Module):
-    def __init__(self, i, q, h, object_num):
+    def __init__(self, i, q, h):
         super().__init__()
         self.qs = nn.Sequential(
             nn.Linear(q, h),
@@ -54,13 +43,10 @@ class MrnBlock(nn.Module):
             nn.Linear(h, h),
             nn.Tanh()
         )
-        self.fc = nn.Linear(object_num, 1)
         self.res = nn.Linear(q, h)
 
     def forward(self, q, i):
-        objects = self.vb(i).transpose(1, 2)
-        question = self.qs(q).unsqueeze(2)
-        f = objects * question
-        res = self.res(q)
-        h = res + self.fc(f).squeeze(2)
+        question = self.qs(q)
+        objects = self.vb(i)
+        h = objects * question + self.res(q)
         return h
