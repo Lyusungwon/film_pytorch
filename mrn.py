@@ -11,16 +11,18 @@ class Mrn(nn.Module):
         self.cv_pretrained = args.cv_pretrained
         pretrained_weight = load_pretrained_embedding(args.word_to_idx, args.te_embedding) if args.te_pretrained else None
         self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout, pretrained_weight)
-        if not args.cv_pretrained:
+        if args.cv_pretrained:
+            filters = 2048 if args.dataset == 'vqa2' else 1024
+            object_num = 14 * 14
+        else:
             self.visual_encoder = Conv(args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm)
             input_h, input_w = args.input_h, args.input_w
             for _ in range(args.cv_layer):
                 input_h = int(np.ceil(input_h / args.cv_stride))
                 input_w = int(np.ceil(input_w / args.cv_stride))
             object_num = input_h * input_w
-        else:
-            object_num = 14 * 14
-        self.first_block = MrnBlock(args.cv_filter, args.te_hidden, args.mrn_hidden, object_num)
+            filters = args.cv_filter
+        self.first_block = MrnBlock(filters, args.te_hidden, args.mrn_hidden, object_num)
         self.blocks = nn.ModuleList([MrnBlock(args.cv_filter, args.mrn_hidden, args.mrn_hidden, object_num) for _ in range(args.mrn_layer - 1)])
         self.fc = nn.Linear(args.mrn_hidden, args.a_size)
 

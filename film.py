@@ -11,7 +11,7 @@ class Film(nn.Module):
         pretrained_weight = load_pretrained_embedding(args.word_to_idx, args.te_embedding) if args.te_pretrained else None
         self.text_encoder = TextEncoder(args.q_size, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout, pretrained_weight)
         if args.cv_pretrained:
-            filters = 1024 if args.dataset == 'clevr' else 2048
+            filters = 2048 if args.dataset == 'vqa2' else 1024
             self.visual_encoder = nn.Conv2d(filters, args.cv_filter, 1, 1)
         else:
             self.visual_encoder = Conv(args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm)
