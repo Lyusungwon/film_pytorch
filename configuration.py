@@ -39,7 +39,7 @@ def get_config():
 
     model_arg = parser.add_argument_group('Model')
     # Convolution
-    model_arg.add_argument('--cv-pretrained', action='store_true')
+    model_arg.add_argument('--cv-pretrained', type=bool)
     model_arg.add_argument('--cv-filter', type=int)
     model_arg.add_argument('--cv-kernel', type=int)
     model_arg.add_argument('--cv-stride', type=int)
