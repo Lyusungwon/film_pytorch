@@ -62,6 +62,7 @@ def load_default_config(args):
             "cv_kernel": 3,
             "cv_stride": 2,
             "cv_layer": 4,
+            "cv_batchnorm": True,
             "te_embedding": 32,
             "te_hidden": 128,
             "te_dropout": 0,
@@ -105,7 +106,7 @@ def load_default_config(args):
             "lr_reduce": True,
             "weight_decay": 0,
             "gradient_clipping": 10.0,
-            "cv_pretrained": False,
+            "cv_pretrained": True,
             "cv_filter": 2048,
             "te_embedding": 200,
             "te_hidden": 2400,
@@ -114,8 +115,6 @@ def load_default_config(args):
             "mlb_hidden": 1200,
             "mlb_glimpse": 2,
         }
-    arg_dict
-
     ori_dict = vars(args)
     for key in arg_dict.keys():
         if ori_dict[key] is not None:
