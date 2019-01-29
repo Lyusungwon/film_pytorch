@@ -42,6 +42,7 @@ def load_default_config(args):
             "cv_kernel": 3,
             "cv_stride": 2,
             "cv_layer": 5,
+            "te_type" : 'lstm',
             "te_embedding": 1024,
             "te_hidden": 1024,
             "te_dropout": 0,

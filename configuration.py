@@ -47,6 +47,7 @@ def get_config():
     model_arg.add_argument('--cv-batchnorm', action='store_true')
     # Text Encoder
     model_arg.add_argument('--te-pretrained', action='store_true')
+    model_arg.add_argument('--te-type', type=str, choices=['gru', 'lstm'])
     model_arg.add_argument('--te-embedding', type=int)
     model_arg.add_argument('--te-hidden', type=int)
     model_arg.add_argument('--te-layer', type=int)
@@ -88,7 +89,7 @@ def get_config():
                    args.weight_decay, args.gradient_clipping,
                    args.device, args.multi_gpu, args.gpu_num] + args.data_config + \
         ['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
-         'te', args.te_pretrained, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout]
+         'te', args.te_pretrained, args.te_type, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout]
 
     if args.model == 'film':
         config_list = config_list + \

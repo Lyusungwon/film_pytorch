@@ -3,19 +3,26 @@ from torch.nn.utils.rnn import pack_padded_sequence
 
 
 class TextEncoder(nn.Module):
-    def __init__(self, vocab, embedding, hidden, num_layer=1, dropout=0, pretrained_weight=None):
+    def __init__(self, vocab, embedding, type, hidden, num_layer=1, dropout=0, pretrained_weight=None):
         super(TextEncoder, self).__init__()
+        self.type = type
         self.embedding = nn.Embedding(vocab, embedding, padding_idx=0)
         if pretrained_weight is not None:
             self.embedding.weight.data.copy_(pretrained_weight)
-            # self.embedding.weight.require_grad = False
-        self.gru = nn.GRU(embedding, hidden, num_layers=num_layer, dropout=dropout, bidirectional=False)
+            self.embedding.weight.require_grad = False
+        if type == 'gru':
+            self.seq = nn.GRU(embedding, hidden, num_layers=num_layer, dropout=dropout, bidirectional=False)
+        elif type == 'lstm':
+            self.seq = nn.LSTM(embedding, hidden, num_layers=num_layer, dropout=dropout, bidirectional=False)
         # self.gru.flatten_parameters()
 
     def forward(self, question, question_length):
         embedded = self.embedding(question)
         packed_embedded = pack_padded_sequence(embedded, question_length, batch_first=True)
-        output, h_n = self.gru(packed_embedded)
+        if self.type == 'gru':
+            output, h_n = self.seq(packed_embedded)
+        elif self.type == 'lstm':
+            output, (h_n, c_n) = self.seq(packed_embedded)
         return output, h_n.squeeze(0)
 
 
