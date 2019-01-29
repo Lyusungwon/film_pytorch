@@ -23,7 +23,7 @@ class Mrn(nn.Module):
             object_num = input_h * input_w
             filters = args.cv_filter
         self.first_block = MrnBlock(filters, args.te_hidden, args.mrn_hidden, object_num)
-        self.blocks = nn.ModuleList([MrnBlock(args.cv_filter, args.mrn_hidden, args.mrn_hidden, object_num) for _ in range(args.mrn_layer - 1)])
+        self.blocks = nn.ModuleList([MrnBlock(filters, args.mrn_hidden, args.mrn_hidden, object_num) for _ in range(args.mrn_layer - 1)])
         self.fc = nn.Linear(args.mrn_hidden, args.a_size)
 
     def forward(self, image, question, question_length):
