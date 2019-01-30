@@ -1,6 +1,7 @@
 from torch import nn
+import torch
 from layers import *
-from utils import load_pretrained_embedding, rn_encode, lower_sum
+from utils import load_pretrained_embedding
 
 
 class RelationalNetwork(nn.Module):
@@ -27,3 +28,34 @@ class RelationalNetwork(nn.Module):
         relations = lower_sum(relations)
         logits = self.f_phi(relations)
         return logits
+
+
+def rn_encode(images, questions):
+    try:
+        device = images.get_device()
+    except:
+        device = torch.device('cpu')
+    n, c, h, w = images.size()
+    o = h * w
+    hd = questions.size(1)
+    x_coordinate = torch.linspace(-1, 1, h).view(1, h, 1, 1).expand(n, h, w, 1).contiguous().view(n, o, 1).to(device)
+    y_coordinate = torch.linspace(-1, 1, w).view(1, 1, w, 1).expand(n, h, w, 1).contiguous().view(n, o, 1).to(device)
+    images = images.view(n, c, o).transpose(1, 2)
+    images = torch.cat([images, x_coordinate, y_coordinate], 2)
+    images1 = images.unsqueeze(1).expand(n, o, o, c + 2).contiguous()
+    images2 = images.unsqueeze(2).expand(n, o, o, c + 2).contiguous()
+    questions = questions.unsqueeze(1).unsqueeze(2).expand(n, o, o, hd)
+    # pairs = torch.cat([images1, images2, questions], 3).view(n, o**2, -1)
+    pairs = torch.cat([images1, images2, questions], 3)
+    return pairs
+
+
+def lower_sum(relations):
+    try:
+        device = relations.get_device()
+    except:
+        device = torch.device('cpu')
+    n, h, w, l = relations.size()
+    mask = torch.ones([h, w]).tril().view(1, h, w, 1).to(device, dtype=torch.uint8)
+    relations = torch.masked_select(relations, mask).view(n, -1, l)
+    return relations.sum(1)

@@ -1,7 +1,7 @@
 import os
 import csv
 import time
-from collections import defaultdict, deque
+from collections import defaultdict, deque, OrderedDict
 from torchvision.utils import make_grid
 from utils import is_file_exist
 from tempfile import NamedTemporaryFile
@@ -163,16 +163,33 @@ class Recorder:
         return False
 
     def make_record(self):
+        self.add_column()
         with open(self.csv_file, 'a', newline='') as f:
             w = csv.DictWriter(f, self.header)
             w.writerow(self.header)
         print(f"Record {self.timestamp} made.")
 
+    def add_column(self):
+        tf = NamedTemporaryFile(mode='w', delete=False)
+        with open(self.csv_file, 'r') as rf, tf:
+            reader = csv.DictReader(rf)
+            writer = csv.DictWriter(tf, fieldnames=self.header)
+            writer.writeheader()
+            for row in reader:
+                new_row = OrderedDict()
+                for column in self.header:
+                    if column in row:
+                        new_row[column] = row[column]
+                    else:
+                        new_row[column] = None
+                writer.writerow(new_row)
+        shutil.move(tf.name, self.csv_file)
+
     def update_csv(self, file):
         tf = NamedTemporaryFile(mode='w', delete=False)
         with open(file, 'r') as rf, tf:
             reader = csv.DictReader(rf)
-            writer = csv.DictWriter(tf, fieldnames=reader.fieldnames)
+            writer = csv.DictWriter(tf, fieldnames=self.header)
             writer.writeheader()
             for row in reader:
                 if row['timestamp'] == self.timestamp:
@@ -198,6 +215,7 @@ class Recorder:
                                 row[f"{key}_{kind}_TotalLoss"] = self.epoch_loss
                                 for question_type, acc in self.per_question_log.items():
                                     row[f"{key}_{kind}_QT_{question_type}"] = acc
+                print(row)
                 writer.writerow(row)
         shutil.move(tf.name, file)
 

@@ -36,49 +36,6 @@ def positional_encode(images):
     return images
 
 
-def baseline_encode(images, questions):
-    device = images.get_device()
-    n, c, h, w = images.size()
-    o = h * w
-    hd = questions.size(1)
-    x_coordinate = torch.linspace(-h / 2, h / 2, h).view(1, 1, h, 1).expand(n, 1, h, w).to(device)
-    y_coordinate = torch.linspace(-w / 2, w / 2, w).view(1, 1, 1, w).expand(n, 1, h, w).to(device)
-    questions = questions.unsqueeze(2).unsqueeze(3).expand(n, hd, h, w)
-    images = torch.cat([images, x_coordinate, y_coordinate, questions], 1).view(n, -1, o).transpose(1, 2)
-    return images
-
-
-def rn_encode(images, questions):
-    try:
-        device = images.get_device()
-    except:
-        device = torch.device('cpu')
-    n, c, h, w = images.size()
-    o = h * w
-    hd = questions.size(1)
-    x_coordinate = torch.linspace(-1, 1, h).view(1, h, 1, 1).expand(n, h, w, 1).contiguous().view(n, o, 1).to(device)
-    y_coordinate = torch.linspace(-1, 1, w).view(1, 1, w, 1).expand(n, h, w, 1).contiguous().view(n, o, 1).to(device)
-    images = images.view(n, c, o).transpose(1, 2)
-    images = torch.cat([images, x_coordinate, y_coordinate], 2)
-    images1 = images.unsqueeze(1).expand(n, o, o, c + 2).contiguous()
-    images2 = images.unsqueeze(2).expand(n, o, o, c + 2).contiguous()
-    questions = questions.unsqueeze(1).unsqueeze(2).expand(n, o, o, hd)
-    # pairs = torch.cat([images1, images2, questions], 3).view(n, o**2, -1)
-    pairs = torch.cat([images1, images2, questions], 3)
-    return pairs
-
-
-def lower_sum(relations):
-    try:
-        device = relations.get_device()
-    except:
-        device = torch.device('cpu')
-    n, h, w, l = relations.size()
-    mask = torch.ones([h, w]).tril().view(1, h, w, 1).to(device, dtype=torch.uint8)
-    relations = torch.masked_select(relations, mask).view(n, -1, l)
-    return relations.sum(1)
-
-
 def save_checkpoint(epoch_idx, model, optimizer, args, batch_record_idx):
     log = args.log
     checkpoint = dict()
@@ -136,7 +93,15 @@ def load_pretrained_conv():
 
 
 def load_dict(args):
-
+    dict_file = os.path.join(args.data_directory, args.dataset, f'data_dict_{args.top_k}.pkl')
+    with open(dict_file, 'rb') as file:
+        data_dict = pickle.load(file)
+    args.word_to_idx = data_dict['word_to_idx']
+    args.idx_to_word = data_dict['idx_to_word']
+    args.answer_word_to_idx = data_dict['answer_word_to_idx']
+    args.answer_idx_to_word = data_dict['answer_idx_to_word']
+    args.question_type_to_idx = data_dict['question_type_to_idx']
+    args.idx_to_question_type = data_dict['idx_to_question_type']
     args.q_size = len(args.word_to_idx)
     args.a_size = len(args.answer_word_to_idx)
     args.qt_size = len(args.question_type_to_idx)

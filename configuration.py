@@ -10,7 +10,7 @@ home = str(Path.home())
 def get_config():
     parser = argparse.ArgumentParser(description='parser')
     parser.add_argument('--project', type=str, default='vqa')
-    parser.add_argument('--model', type=str, choices=['rn', 'san', 'mrn', 'mlb', 'film'])
+    parser.add_argument('--model', type=str, choices=['basern', 'rn', 'sarn', 'san', 'mrn', 'mlb', 'film'])
 
     data_arg = parser.add_argument_group('Data')
     data_arg.add_argument('--data-directory', type=str, default=os.path.join(home, 'data'), help='directory of data')
@@ -61,12 +61,26 @@ def get_config():
     # san
     model_arg.add_argument('--san-layer', type=int)
     model_arg.add_argument('--san-k', type=int)
+    # basern
+    model_arg.add_argument('--basern-gt-hidden', type=int)
+    model_arg.add_argument('--basern-gt-layer', type=int)
+    model_arg.add_argument('--basern-fp-hidden', type=int)
+    model_arg.add_argument('--basern-fp-layer', type=int)
+    model_arg.add_argument('--basern-fp-dropout', type=float)
     # rn
     model_arg.add_argument('--rn-gt-hidden', type=int)
     model_arg.add_argument('--rn-gt-layer', type=int)
     model_arg.add_argument('--rn-fp-hidden', type=int)
     model_arg.add_argument('--rn-fp-layer', type=int)
     model_arg.add_argument('--rn-fp-dropout', type=float)
+    # rn
+    model_arg.add_argument('--sarn-hp-hidden', type=int)
+    model_arg.add_argument('--sarn-hp-layer', type=int)
+    model_arg.add_argument('--sarn-gt-hidden', type=int)
+    model_arg.add_argument('--sarn-gt-layer', type=int)
+    model_arg.add_argument('--sarn-fp-hidden', type=int)
+    model_arg.add_argument('--sarn-fp-layer', type=int)
+    model_arg.add_argument('--sarn-fp-dropout', type=float)
     # mrn
     model_arg.add_argument('--mrn-hidden', type=int)
     model_arg.add_argument('--mrn-layer', type=int)
@@ -100,9 +114,17 @@ def get_config():
         config_list = config_list + \
             ['san', args.san_layer, args.san_k,
              args.memo]
+    elif args.model == 'basern':
+        config_list = config_list + \
+            ['basern', args.basern_gt_hidden, args.basern_gt_layer, args.basern_fp_hidden, args.basern_fp_layer, args.basern_fp_dropout,
+             args.memo]
     elif args.model == 'rn':
         config_list = config_list + \
             ['rn', args.rn_gt_hidden, args.rn_gt_layer, args.rn_fp_hidden, args.rn_fp_layer, args.rn_fp_dropout,
+             args.memo]
+    elif args.model == 'sarn':
+        config_list = config_list + \
+            ['sarn', args.sarn_hp_hidden, args.sarn_hp_layer, args.sarn_gt_hidden, args.sarn_gt_layer, args.sarn_fp_hidden, args.sarn_fp_layer, args.sarn_fp_dropout,
              args.memo]
     elif args.model == 'mrn':
         config_list = config_list + \

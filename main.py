@@ -11,7 +11,8 @@ from san import San
 from rn import RelationalNetwork
 from mrn import Mrn
 from mlb import Mlb
-import wandb
+from basern import BaseRN
+from sarn import Sarn
 
 args = get_config()
 device = args.device
@@ -27,6 +28,10 @@ if args.model == 'film':
     model = Film(args)
 elif args.model == 'san':
     model = San(args)
+elif args.model == 'basern':
+    model = BaseRN(args)
+elif args.model == 'sarn':
+    model = Sarn(args)
 elif args.model == 'rn':
     model = RelationalNetwork(args)
 elif args.model == 'mrn':
