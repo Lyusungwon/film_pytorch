@@ -102,7 +102,7 @@ class VQA(Dataset):
         q = torch.from_numpy(q).to(torch.long)
         a = torch.Tensor([a]).to(torch.long)
         q_t = torch.Tensor([q_t]).to(torch.long)
-        return image1.sum(), image2.sum(),q, a, q_t
+        return image1, image2, q, a, q_t
         # question_file = h5py.File(self.question_file, 'r', swmr=True)
         # q = question_file['questions'][idx]
         # a = question_file['answers'][idx]
