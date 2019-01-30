@@ -101,8 +101,9 @@ class VQA(Dataset):
         if self.dataset == 'sample':
             image_file = f'CLEVR_new_{str(ii).zfill(6)}.png'
         image2 = Image.open(os.path.join(self.image_dir2, image_file)).convert('RGB')
-        if self.transform:
-            image2 = self.transform(image2).unsqueeze(0)
+        # if self.transform:
+        #     image2 = self.transform(image2).unsqueeze(0)
+        image2 = torch.FloatTensor(image2.unsqueeze(0))
         print("image2", ii)
         q = torch.from_numpy(q).to(torch.long)
         a = torch.Tensor([a]).to(torch.long)
