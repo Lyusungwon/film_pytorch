@@ -82,7 +82,6 @@ class VQA(Dataset):
         print(f"Start loading {self.idx_dict_file}")
         with open(self.idx_dict_file, 'rb') as file:
             self.idx_dict = pickle.load(file)[self.mode]
-            print(self.idx_dict)
 
     def __len__(self):
         return h5py.File(self.question_file, 'r', swmr=True)['questions'].shape[0]
@@ -104,7 +103,7 @@ class VQA(Dataset):
         image2 = Image.open(os.path.join(self.image_dir2, image_file)).convert('RGB')
         if self.transform:
             image2 = self.transform(image2).unsqueeze(0)
-        print("image1", ii)
+        print("image2", ii)
         q = torch.from_numpy(q).to(torch.long)
         a = torch.Tensor([a]).to(torch.long)
         q_t = torch.Tensor([q_t]).to(torch.long)
