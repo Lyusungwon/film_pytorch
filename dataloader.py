@@ -57,7 +57,7 @@ class VQA(Dataset):
         self.transform = transform
         self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}_{top_k}.h5')
         # if self.cv_pretrained:
-        self.image_dir2 = os.path.join(data_dir, dataset, f'images_{self.mode}_{str(size[0])}.h5')
+        self.image_dir1 = os.path.join(data_dir, dataset, f'images_{self.mode}_{str(size[0])}.h5')
         self.idx_dict_file = os.path.join(data_dir, dataset, 'idx_dict.pkl')
         if dataset == 'clevr' or dataset == 'sample':
             self.image_dir2 = os.path.join(data_dir, dataset, 'images', f'{self.mode}')
@@ -66,7 +66,7 @@ class VQA(Dataset):
         if not is_file_exist(self.question_file):
             make_questions(data_dir, dataset, top_k)
         if cv_pretrained:
-            if not is_file_exist(self.image_dir):
+            if not is_file_exist(self.image_dir1):
                 make_images(data_dir, dataset, size)
         self.load_data()
 
