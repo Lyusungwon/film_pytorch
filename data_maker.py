@@ -138,7 +138,7 @@ def make_questions(data_dir, dataset, top_k=None):
         print(f"questions_{mode}_{top_k}.h5' saved")
 
 
-def make_images(data_dir, dataset, size, batch_size=256, max_images=None):
+def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
     print(f"Start making {dataset} image pickle")
     model_name = 'resnet152' if dataset == 'vqa2' else 'resnet101'
     image_type = 'jpg' if dataset == 'vqa2' else 'png'
