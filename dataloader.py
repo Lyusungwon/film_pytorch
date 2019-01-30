@@ -82,6 +82,7 @@ class VQA(Dataset):
         print(f"Start loading {self.idx_dict_file}")
         with open(self.idx_dict_file, 'rb') as file:
             self.idx_dict = pickle.load(file)[self.mode]
+            print(self.dix_dict)
 
     def __len__(self):
         return h5py.File(self.question_file, 'r', swmr=True)['questions'].shape[0]
@@ -95,6 +96,7 @@ class VQA(Dataset):
         # if self.cv_pretrained:
         image1 = h5py.File(self.image_dir1, 'r', swmr=True)['images'][self.idx_dict[ii]]
         image1 = torch.from_numpy(image1).unsqueeze(0)
+        print("image1", self.idx_dict[ii])
 
         image_file = f'COCO_{self.mode}2014_{str(ii).zfill(12)}.jpg' if 'vqa' in self.dataset else f'CLEVR_{self.mode}_{str(ii).zfill(6)}.png'
         if self.dataset == 'sample':
@@ -102,6 +104,7 @@ class VQA(Dataset):
         image2 = Image.open(os.path.join(self.image_dir2, image_file)).convert('RGB')
         if self.transform:
             image2 = self.transform(image2).unsqueeze(0)
+        print("image1", ii)
         q = torch.from_numpy(q).to(torch.long)
         a = torch.Tensor([a]).to(torch.long)
         q_t = torch.Tensor([q_t]).to(torch.long)
