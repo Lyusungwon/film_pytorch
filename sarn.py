@@ -22,7 +22,9 @@ class Sarn(nn.Module):
     def forward(self, image, question, question_length):
         if not self.cv_pretrained:
             image = image * 2 - 1
-        x = self.visual_encoder(image)
+            x = self.visual_encoder(image)
+        else:
+            x = self.visual_resize(image)
         _, code = self.text_encoder(question, question_length)
         coordinate_encoded, question_encoded = sarn_encode(x, code)
         attention = self.h_psi(question_encoded)

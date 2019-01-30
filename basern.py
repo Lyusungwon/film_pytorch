@@ -21,7 +21,9 @@ class BaseRN(nn.Module):
     def forward(self, image, question, question_length):
         if not self.cv_pretrained:
             image = image * 2 - 1
-        x = self.visual_encoder(image)
+            x = self.visual_encoder(image)
+        else:
+            x = self.visual_resize(image)
         _, code = self.text_encoder(question, question_length)
         pairs = baseline_encode(x, code)
         relations = self.g_theta(pairs).sum(1)
