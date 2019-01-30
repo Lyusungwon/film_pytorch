@@ -82,7 +82,7 @@ class VQA(Dataset):
         print(f"Start loading {self.idx_dict_file}")
         with open(self.idx_dict_file, 'rb') as file:
             self.idx_dict = pickle.load(file)[self.mode]
-            print(self.dix_dict)
+            print(self.idx_dict)
 
     def __len__(self):
         return h5py.File(self.question_file, 'r', swmr=True)['questions'].shape[0]
