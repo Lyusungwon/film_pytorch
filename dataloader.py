@@ -30,7 +30,7 @@ def collate_text(list_inputs):
         answers.append(a)
         question_types.append(types)
     images1 = torch.cat(images1, 0)
-    images2 = torch.cat(images2, 0)
+    # images2 = torch.cat(images2, 0)
     padded_questions = pad_sequence(questions, batch_first=True)
     q_length = torch.Tensor(q_length).to(torch.long)
     answers = torch.cat(answers, 0)
