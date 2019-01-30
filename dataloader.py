@@ -34,7 +34,7 @@ def collate_text(list_inputs):
     return images, (padded_questions, q_length), answers, question_types
 
 
-def load_dataloader(data_directory, dataset, is_train=True, batch_size=128, data_config=[224, 224, 0, True]):
+def load_dataloader(data_directory, dataset, is_train=True, batch_size=128, data_config=[224, 224, 0, True, 0]):
     input_h, input_w, cpu_num, cv_pretrained, top_k = data_config
     if cv_pretrained:
         transform = transforms.Compose([transforms.ToTensor()])
