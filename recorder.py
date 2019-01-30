@@ -215,7 +215,6 @@ class Recorder:
                                 row[f"{key}_{kind}_TotalLoss"] = self.epoch_loss
                                 for question_type, acc in self.per_question_log.items():
                                     row[f"{key}_{kind}_QT_{question_type}"] = acc
-                print(row)
                 writer.writerow(row)
         shutil.move(tf.name, file)
 
