@@ -15,23 +15,26 @@ home = str(Path.home())
 
 def collate_text(list_inputs):
     list_inputs.sort(key=lambda x: len(x[1]), reverse=True)
-    images = []
+    images1 = []
+    images2 = []
     questions = []
     q_length = []
     answers = []
     question_types = []
-    for i, q, a, types in list_inputs:
-        images.append(i)
+    for i1, i2, q, a, types in list_inputs:
+        images1.append(i1)
+        images2.append(i2)
         questions.append(q)
         q_length.append(len(q))
         answers.append(a)
         question_types.append(types)
-    images = torch.cat(images, 0)
+    images1 = torch.cat(images1, 0)
+    images2 = torch.cat(images2, 0)
     padded_questions = pad_sequence(questions, batch_first=True)
     q_length = torch.Tensor(q_length).to(torch.long)
     answers = torch.cat(answers, 0)
     question_types = torch.cat(question_types, 0)
-    return images, (padded_questions, q_length), answers, question_types
+    return images1, images2, (padded_questions, q_length), answers, question_types
 
 
 def load_dataloader(data_directory, dataset, is_train=True, batch_size=128, data_config=[224, 224, 0, True, 0]):
