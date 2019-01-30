@@ -9,6 +9,7 @@ from pathlib import Path
 from data_maker import make_questions, make_images
 from utils import is_file_exist
 import h5py
+import numpy as np
 
 home = str(Path.home())
 
@@ -103,7 +104,7 @@ class VQA(Dataset):
         image2 = Image.open(os.path.join(self.image_dir2, image_file)).convert('RGB')
         # if self.transform:
         #     image2 = self.transform(image2).unsqueeze(0)
-        image2 = torch.FloatTensor(image2.unsqueeze(0))
+        image2 = torch.from_numpy(np.array(image2)).to(torch.float)
         print("image2", ii)
         q = torch.from_numpy(q).to(torch.long)
         a = torch.Tensor([a]).to(torch.long)
