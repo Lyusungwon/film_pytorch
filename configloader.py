@@ -90,7 +90,7 @@ def load_default_config(args):
             "weight_decay": 0,
             "gradient_clipping": 0,
             "te_type" : 'gru',
-            "te_embedding": 200,
+            "te_embedding": 2000,
             "te_hidden": 2400,
             "te_dropout": 0,
             "te_layer": 1,
