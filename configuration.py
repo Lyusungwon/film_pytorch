@@ -26,7 +26,7 @@ def get_config():
     data_arg.add_argument('--input-h', type=int)
     data_arg.add_argument('--input-w', type=int)
     data_arg.add_argument('--top-k', type=int)
-    data_arg.add_argument('--multi-labels', action='store_true')
+    data_arg.add_argument('--multi-label', action='store_true')
 
     train_arg = parser.add_argument_group('Train')
     train_arg.add_argument('--batch-size', type=int)
