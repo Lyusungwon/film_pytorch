@@ -22,6 +22,7 @@ if args.multi_label:
     criterion = F.binary_cross_entropy_with_logits
 else:
     criterion = F.cross_entropy
+
 if args.multi_gpu:
     model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
 model = model.to(device)
@@ -45,8 +46,18 @@ def epoch(epoch_idx, is_train):
             if args.gradient_clipping:
                 nn.utils.clip_grad_value_(model.parameters(), args.gradient_clipping)
             optimizer.step()
-        pred = torch.max(output.detach(), 1)[1]
-        correct = (pred == answer)
+        if args.multi_label:
+            maxi = torch.max(output.detach(), 1)[1]
+            pred = torch.zeros_like(output.detach())
+            pred[torch.arange(batch_size), maxi] = 1.0
+            correct = (pred * answer).sum(1).byte()
+            # answer = torch.max(answer, 1)[1]
+            # pred = torch.max(output.detach(), 1)[1]
+            # answer = torch.max(answer, 1)[1]
+            # correct = (pred == answer)
+        else:
+            pred = torch.max(output.detach(), 1)[1]
+            correct = (pred == answer)
         recorder.batch_end(loss, correct, types)
         if is_train and (batch_idx % args.log_interval == 0):
             recorder.log_batch(batch_idx, batch_size)
