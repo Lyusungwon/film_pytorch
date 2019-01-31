@@ -7,7 +7,7 @@ import pickle
 from PIL import Image
 from pathlib import Path
 from data_maker import make_questions, make_images
-from utils import is_file_exist
+from utils import is_file_exist, to_onehot
 import h5py
 
 home = str(Path.home())
@@ -34,14 +34,14 @@ def collate_text(list_inputs):
     return images, (padded_questions, q_length), answers, question_types
 
 
-def load_dataloader(data_directory, dataset, is_train=True, batch_size=128, data_config=[224, 224, 0, True, 0]):
-    input_h, input_w, cpu_num, cv_pretrained, top_k = data_config
+def load_dataloader(data_directory, dataset, is_train=True, batch_size=128, data_config=[224, 224, 0, True, 0, False]):
+    input_h, input_w, cpu_num, cv_pretrained, top_k, multi_label = data_config
     if cv_pretrained:
         transform = transforms.Compose([transforms.ToTensor()])
     else:
         transform = transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])
     dataloader = DataLoader(
-        VQA(data_directory, dataset, train=is_train, cv_pretrained=cv_pretrained, transform=transform, size=(input_h, input_w), top_k=top_k),
+        VQA(data_directory, dataset, train=is_train, cv_pretrained=cv_pretrained, transform=transform, size=(input_h, input_w), top_k=top_k, multi_label=multi_label),
         batch_size=batch_size, shuffle=True,
         num_workers=cpu_num, pin_memory=True,
         collate_fn=collate_text)
@@ -50,12 +50,14 @@ def load_dataloader(data_directory, dataset, is_train=True, batch_size=128, data
 
 class VQA(Dataset):
     """VQA dataset."""
-    def __init__(self, data_dir, dataset, train=True, cv_pretrained=True, transform=None, size=(224,224), top_k=0):
+    def __init__(self, data_dir, dataset, train=True, cv_pretrained=True, transform=None, size=(224,224), top_k=0, multi_label=False):
         self.dataset = dataset
         self.mode = 'train' if train else 'val'
         self.cv_pretrained = cv_pretrained
         self.transform = transform
-        self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}_{top_k}.h5')
+        self.multi_label = multi_label
+        self.data_file = os.path.join(data_dir, dataset, f'data_dict_{top_k}_{multi_label}.pkl')
+        self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}_{top_k}_{multi_label}.h5')
         if self.cv_pretrained:
             self.image_dir = os.path.join(data_dir, dataset, f'images_{self.mode}_{str(size[0])}.h5')
             self.idx_dict_file = os.path.join(data_dir, dataset, 'idx_dict.pkl')
@@ -65,7 +67,7 @@ class VQA(Dataset):
             elif dataset == 'vqa2':
                 self.image_dir = os.path.join(data_dir, dataset, f'{self.mode}2014')
         if not is_file_exist(self.question_file):
-            make_questions(data_dir, dataset, top_k)
+            make_questions(data_dir, dataset, top_k, multi_label)
         if cv_pretrained:
             if not is_file_exist(self.image_dir):
                 make_images(data_dir, dataset, size)
@@ -73,9 +75,11 @@ class VQA(Dataset):
 
 
     def load_data(self):
-        # print(f"Start loading {self.data_file}")
-        # with open(self.data_file, 'rb') as file:
-        #     self.data = pickle.load(file)
+        if self.multi_label:
+            print(f"Start loading {self.data_file}")
+            with open(self.data_file, 'rb') as file:
+                data_dict = pickle.load(file)
+                self.a_size = len(data_dict['answer_word_to_idx'])
         if self.cv_pretrained:
             print(f"Start loading {self.idx_dict_file}")
             with open(self.idx_dict_file, 'rb') as file:
@@ -86,7 +90,6 @@ class VQA(Dataset):
 
     def __getitem__(self, idx):
         question_file = h5py.File(self.question_file, 'r', swmr=True)
-        # image_file, image_id, a, q_t = self.data[idx]
         q = question_file['questions'][idx]
         a = question_file['answers'][idx]
         q_t = question_file['question_types'][idx]
@@ -102,172 +105,16 @@ class VQA(Dataset):
             if self.transform:
                 image = self.transform(image).unsqueeze(0)
         q = torch.from_numpy(q).to(torch.long)
-        a = torch.Tensor([a]).to(torch.long)
+        a = torch.Tensor(a).to(torch.long) if not self.multi_label else to_onehot(a, self.a_size)
         q_t = torch.Tensor([q_t]).to(torch.long)
         return image, q, a, q_t
 
 
 if __name__ =='__main__':
-    dataloader = load_dataloader(os.path.join(home, 'data'), 'sample', True, 2, data_config=[224, 224, 0, True])
+    dataloader = load_dataloader(os.path.join(home, 'data'), 'sample', True, 2, data_config=[224, 224, 0, True, 0, True])
     for img, q, a, types in dataloader:
         print(img.size())
         print(q)
         print(a.size())
         print(types.size())
         break
-    #
-    # if data == 'clevr' or data == 'sample':
-    #     dataloader = DataLoader(
-    #         Clevr(os.path.join(data_directory, data), train=is_train, cv_pretrained=cv_pretrained,
-    #               transform=transform, size=(input_h, input_w)),
-    #         batch_size=batch_size, shuffle=True54,
-    #         num_workers=cpu_num, pin_memory=True,
-    #         collate_fn=collate_clevr)
-    # elif data == 'vqa2':
-    #     dataloader = DataLoader(
-    #         VQA2(os.path.join(data_directory, data), train=is_train, cv_pretrained=cv_pretrained,
-    #              transform=transform),
-    #         batch_size=batch_size, shuffle=True,
-    #         num_workers=cpu_num, pin_memory=True,
-    #         collate_fn=collate_vqa)
-#
-#
-#
-# class Clevr(Dataset):
-#     """Clevr dataset."""
-#     def __init__(self, data_dir, train=True, cv_pretrained=True, transform=None, size=(224,224)):
-#         self.mode = 'train' if train else 'val'
-#         self.cv_pretrained = cv_pretrained
-#         self.transform = transform
-#         if self.cv_pretrained:
-#             self.img_dir = os.path.join(data_dir, f'images_{self.mode}_{str(size[0])}.h5')
-#         else:
-#             self.img_dir = os.path.join(data_dir, 'images', f'{self.mode}')
-#         self.question_file = os.path.join(data_dir, f'questions_{self.mode}.h5')
-#         self.data_file = os.path.join(data_dir, 'data_{}.pkl'.format(self.mode))
-#         # self.dict_file = os.path.join(data_dir, 'data_dict.pkl')
-#         if not self.is_file_exits(self.question_file):
-#             make_questions(data_dir, 'clevr')
-#         if cv_pretrained:
-#             if not self.is_file_exits(self.img_dir):
-#                 make_clevr_images(data_dir, size)
-#         self.load_data()
-#
-#     def __len__(self):
-#         return len(self.data)
-#
-#     def __getitem__(self, idx):
-#         if self.cv_pretrained:
-#             self.images = h5py.File(self.img_dir, 'r', swmr=True)['images']
-#         self.questions = h5py.File(self.question_file, 'r', swmr=True)['questions']
-#         img_file, a, q_t = self.data[idx]
-#         q = self.questions[idx]
-#         if not self.cv_pretrained:
-#             image = Image.open(os.path.join(self.img_dir, img_file)).convert('RGB')
-#             if self.transform:
-#                 image = self.transform(image).unsqueeze(0)
-#         else:
-#             image_idx = int(img_file.split('.')[0].split('_')[-1])
-#             image = self.images[image_idx]
-#             image = torch.from_numpy(image).unsqueeze(0)
-#         q = torch.from_numpy(q).to(torch.long)
-#         return image, q, a, q_t
-#
-#
-# class VQA2(Dataset):
-#     """VQA2.0 dataset."""
-#     def __init__(self, data_dir, train=True, reduced_data=False, transform=None):
-#         self.mode = 'train' if train else 'val'
-#         self.reduced_data = reduced_data
-#         self.transform = transform
-#         self.reduced_data = reduced_data
-#         if not reduced_data:
-#             self.img_dir = os.path.join(data_dir, f'{self.mode}2014')
-#         else:
-#             self.img_dir = os.path.join(data_dir, f'{self.mode}_reduced_images.pkl')
-#         self.data_file = os.path.join(data_dir, 'data_{}.pkl'.format(self.mode))
-#         self.dict_file = os.path.join(data_dir, 'data_dict.pkl')
-#         if not self.is_file_exits(self.data_file):
-#             make_questions(data_dir)
-#         self.load_data()
-#
-#     def is_file_exits(self, file):
-#         if os.path.isfile(file):
-#             print(f"Data {file} exist")
-#             return True
-#         else:
-#             print(f"Data {file} does not exist")
-#             return False
-#
-#     def load_data(self):
-#         print("Start loading {}".format(self.data_file))
-#         with open(self.data_file, 'rb') as file:
-#             self.data = pickle.load(file)
-#         if self.reduced_data:
-#             if not self.is_file_exits(self.img_dir):
-#                 raise
-#             with open(self.img_dir, 'rb') as file:
-#                 self.images = pickle.load(file)
-#
-#     def __len__(self):
-#         return len(self.data)
-#
-#     def __getitem__(self, idx):
-#         image_idx, q, a, q_t, a_t = self.data[idx]
-#         if not self.reduced_data:
-#             image = Image.open(os.path.join(self.img_dir, 'COCO_{}2014_{}.jpg'.format(self.mode, str(image_idx).zfill(12)))).convert('RGB')
-#             print(image.type())
-#             if self.transform:
-#                 image = self.transform(image)
-#             image = np.array(image)
-#         else:
-#             image = self.images[idx]
-#             image = torch.from_numpy(image).unsqueeze(0)
-#         q = torch.from_numpy(q).to(torch.long)
-#         return image, q, a, q_t, a_t
-#
-#
-
-#
-# def collate_clevr(list_inputs):
-#     list_inputs.sort(key=lambda x: len(x[1]), reverse=True)
-#     images = []
-#     questions = []
-#     q_length = []
-#     answers = []
-#     question_types = []
-#     for i, q, a, q_type in list_inputs:
-#         images.append(i)
-#         questions.append(q)
-#         q_length.append(len(q))
-#         answers.append(a)
-#         question_types.append(q_type)
-#     images = torch.cat(images, 0)
-#     padded_questions = pad_sequence(questions, batch_first=True)
-#     q_length = torch.Tensor(q_length).to(torch.long)
-#     answers = torch.Tensor(answers).to(torch.long)
-#     question_types = torch.Tensor(question_types).to(torch.long)
-#     return images, (padded_questions, q_length), answers, [question_types]
-#
-#
-# def collate_vqa(list_inputs):
-#     list_inputs.sort(key=lambda x: len(x[1]), reverse=True)
-#     images = torch.Tensor()
-#     questions = []
-#     q_length = []
-#     answers = []
-#     question_types = []
-#     answer_types = []
-#     for i, q, a, q_type, a_type in list_inputs:
-#         images = torch.cat([images, i.unsqueeze(0)], 0)
-#         questions.append(q)
-#         q_length.append(len(q))
-#         answers.append(a)
-#         question_types.append(q_type)
-#         answer_types.append(a_type)
-#     answers = torch.cat(answers, 0)
-#     question_types = torch.cat(question_types, 0)
-#     answer_types = torch.cat(answer_types, 0)
-#     padded_questions = pad_sequence(questions, batch_first=True)
-#     q_length = torch.Tensor(q_length).to(torch.long)
-#     return images, (padded_questions, q_length), answers, [question_types, answer_types]

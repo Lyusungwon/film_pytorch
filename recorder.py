@@ -117,15 +117,14 @@ class Recorder:
             self.writer.add_scalar("{}-7. Question '{}' accuracy".format(self.mode, question_type_name), type_accuracy, self.epoch_idx)
         self.update_csv(self.csv_file)
 
-    def log_data(self, image, question, answer):
+    def log_data(self, image, question, answer, types):
         n = min(image.size()[0], 8)
         question_text = [' '.join([self.idx_to_word[i] for i in q]) for q in question.cpu().numpy()[:n]]
         answer_text = [self.answer_idx_to_word[a] for a in answer.cpu().numpy()[:n]]
-        text = []
-        for j, (question, answer) in enumerate(zip(question_text, answer_text)):
-            text.append(f'Quesetion {j}: {question} / Answer: {answer}')
-        self.writer.add_image('Image', make_grid(image[:n], 2), self.epoch_idx)
-        self.writer.add_text('QA', '\n'.join(text), self.epoch_idx)
+        question_type_text = [self.idx_to_question_type[qt] for qt in question_type.cpu().numpy()[:n]]
+        for j, (question, answer, q_type) in enumerate(zip(question_text, answer_text, question_type_text)):
+            self.writer.add_text(f'QA{j}', f'Quesetion: {question} / Answer: {answer} / Type: {q_type}', self.epoch_idx)
+        self.writer.add_image('Image', make_grid(image[:n], 4), self.epoch_idx)
 
     def get_epoch_loss(self):
         return self.epoch_loss / self.dataset_size

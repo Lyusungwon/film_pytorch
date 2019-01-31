@@ -1,20 +1,13 @@
 import torch.optim as optim
-import torch.nn as nn
 import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 from utils import *
 from configuration import get_config
 from recorder import Recorder
 import dataloader
-from film import Film
-from san import San
-from rn import RelationalNetwork
-from mrn import Mrn
-from mlb import Mlb
-from basern import BaseRN
-from sarn import Sarn
 
-args = get_config()
+
+args, model = get_config()
 device = args.device
 torch.manual_seed(args.seed)
 
@@ -24,26 +17,16 @@ args = load_dict(args)
 start_epoch = 0
 batch_record_idx = 0
 
-if args.model == 'film':
-    model = Film(args)
-elif args.model == 'san':
-    model = San(args)
-elif args.model == 'basern':
-    model = BaseRN(args)
-elif args.model == 'sarn':
-    model = Sarn(args)
-elif args.model == 'rn':
-    model = RelationalNetwork(args)
-elif args.model == 'mrn':
-    model = Mrn(args)
-elif args.model == 'mlb':
-    model = Mlb(args)
 optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 if args.lr_reduce:
     reduce_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min')
 if args.load_model:
     model, optimizer, start_epoch, batch_record_idx = load_checkpoint(model, optimizer, args.log, device)
 
+if args.multi_labels:
+    criterion = F.binary_cross_entropy_with_logits()
+else:
+    criterion = F.cross_entropy()
 if args.multi_gpu:
     model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
 model = model.to(device)
@@ -61,13 +44,13 @@ def epoch(epoch_idx, is_train):
         question_length = question_set[1].to(device)
         answer = answer.to(device)
         output = model(image, question, question_length)
-        loss = F.cross_entropy(output, answer)
+        loss = criterion(output, answer)
         if is_train:
             loss.backward()
             if args.gradient_clipping:
                 nn.utils.clip_grad_value_(model.parameters(), args.gradient_clipping)
             optimizer.step()
-        pred = torch.max(output.data, 1)[1]
+        pred = torch.max(output.datach(), 1)[1]
         correct = (pred == answer)
         recorder.batch_end(loss, correct, types)
         if is_train and (batch_idx % args.log_interval == 0):
@@ -77,7 +60,7 @@ def epoch(epoch_idx, is_train):
         if args.lr_reduce:
             reduce_scheduler.step(recorder.get_epoch_loss())
         if not args.cv_pretrained:
-            recorder.log_data(image.data, question.data, answer.data)
+            recorder.log_data(image, question, answer, types)
 
 
 if __name__ == '__main__':

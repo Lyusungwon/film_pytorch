@@ -26,7 +26,7 @@ clevr_q_dict = {'count': 'count',
                 'query_material': 'query_attribute',
                 'query_color': 'query_attribute'}
 
-def make_questions(data_dir, dataset, top_k=None):
+def make_questions(data_dir, dataset, top_k=None, multi_label=False):
     print(f"Start making {dataset} data pickle")
     if top_k and (dataset == 'vqa2' or dataset == 'vqa1'):
         answer_corpus = list()
@@ -35,8 +35,14 @@ def make_questions(data_dir, dataset, top_k=None):
             with open(annotation_file) as f:
                 annotations = json.load(f)["annotations"]
             for q_obj in annotations:
-                answer_word = q_obj["multiple_choice_answer"]
-                answer_corpus.append(answer_word)
+                if not multi_label:
+                    answer_word = q_obj["multiple_choice_answer"]
+                    answer_corpus.append(answer_word)
+                else:
+                    answers = q_obj["answers"]
+                    for answer in answers:
+                        answer_corpus.append(answer["answer"])
+
         top_k_words = set([i for (i, j) in Counter(answer_corpus).most_common(top_k)])
     query = 'type' if dataset == 'sample' else 'function'
     q_corpus = set()
@@ -55,11 +61,11 @@ def make_questions(data_dir, dataset, top_k=None):
                 q_text = re.sub(";", " ;", q_text)
                 q_words = re.sub("[^;A-Za-z ]+", "", q_text).split(' ')
                 q_corpus.update(q_words)
-                a_text = str(question['answer']).lower().strip()
-                a_corpus.add(a_text)
+                a_word = [str(question['answer']).lower().strip()]
+                a_corpus.update(a_word)
                 q_type = clevr_q_dict[question['program'][-1][query]]
                 qt_corpus.add(q_type)
-                qa_list[mode].append((image_dir, image_id, q_words, a_text, q_type))
+                qa_list[mode].append((image_dir, image_id, q_words, a_word, q_type))
         elif dataset == 'vqa2' or dataset == 'vqa1':
             question_list = {}
             question_file = os.path.join(data_dir, dataset, f'v2_OpenEnded_mscoco_{mode}2014_questions.json')
@@ -71,21 +77,27 @@ def make_questions(data_dir, dataset, top_k=None):
             with open(annotation_file) as f:
                 annotations = json.load(f)["annotations"]
             for q_obj in annotations:
-                answer_word = q_obj["multiple_choice_answer"]
-                if top_k and answer_word not in top_k_words:
-                    continue
+                if not multi_label:
+                    answer_word = [q_obj["multiple_choice_answer"]]
+                    if top_k and answer_word[0] not in top_k_words:
+                        continue
                 else:
-                    image_id = q_obj['image_id']
-                    image_dir = f'COCO_{mode}2014_{str(image_id).zfill(12)}.jpg'
-                    question_text = question_list[q_obj['question_id']]
-                    question_words = re.sub('[^0-9A-Za-z ]+', "", question_text).lower().split(' ')
-                    # question_type = q_obj['question_type']
-                    answer_type = q_obj["answer_type"]
-                    q_corpus.update(question_words)
-                    a_corpus.add(answer_word)
-                    # qt_corpus.add(question_type)
-                    qt_corpus.add(answer_type)
-                    qa_list[mode].append((image_dir, image_id, question_words, answer_word, answer_type))
+                    answer_words = q_obj["answers"]
+                    answer_word = list()
+                    for word in answer_words:
+                        if top_k and word["answer"] in top_k_words:
+                            answer_word.append(word["answer"])
+                    if top_k and len(answer_word) == 0:
+                        continue
+                image_id = q_obj['image_id']
+                image_dir = f'COCO_{mode}2014_{str(image_id).zfill(12)}.jpg'
+                question_text = question_list[q_obj['question_id']]
+                question_words = re.sub('[^0-9A-Za-z ]+', "", question_text).lower().split(' ')
+                answer_type = q_obj["answer_type"]
+                q_corpus.update(question_words)
+                a_corpus.update(answer_word)
+                qt_corpus.add(answer_type)
+                qa_list[mode].append((image_dir, image_id, question_words, answer_word, answer_type))
     word_to_idx = {"<pad>": 0, "<eos>": 1}
     idx_to_word = {0: "<pad>", 1: "<eos>"}
     answer_word_to_idx = dict()
@@ -111,9 +123,9 @@ def make_questions(data_dir, dataset, top_k=None):
                  'question_type_to_idx': question_type_to_idx,
                  'idx_to_question_type': idx_to_question_type
                  }
-    with open(os.path.join(data_dir, dataset, f'data_dict_{top_k}.pkl'), 'wb') as file:
+    with open(os.path.join(data_dir, dataset, f'data_dict_{top_k}_{multi_label}.pkl'), 'wb') as file:
         pickle.dump(data_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
-    print(f'data_dict_{top_k}.pkl saved')
+    print(f'data_dict_{top_k}_{multi_label}.pkl saved')
     print(f"Start making {dataset} question data")
     for mode in modes:
         with h5py.File(os.path.join(data_dir, dataset, f'questions_{mode}_{top_k}.h5'), 'w') as f:
@@ -123,19 +135,16 @@ def make_questions(data_dir, dataset, top_k=None):
                     N = len(qa_list[mode])
                     dt = h5py.special_dtype(vlen=np.dtype('int32'))
                     q_dset = f.create_dataset('questions', (N,), dtype=dt)
-                    a_dset = f.create_dataset('answers', (N,), dtype='int32')
+                    a_dset = f.create_dataset('answers', (N,), dtype=dt)
                     qt_dset = f.create_dataset('question_types', (N, ), dtype='int32')
                     ii_dset = f.create_dataset('image_ids', (N,), dtype='int32')
                 q = [word_to_idx[word] for word in q_word_list]
                 q.append(1)
                 q_dset[n] = q
-                a_dset[n] = answer_word_to_idx[answer_word]
+                a_dset[n] = [answer_word_to_idx[word] for word in answer_word]
                 ii_dset[n] = image_id
                 qt_dset[n] = question_type_to_idx[q_type]
-        #         qa_idx_data[mode].append((image_dir, image_id, a, q_t))
-        # with open(os.path.join(data_dir, dataset, 'data_{}_.pkl'.format(mode)), 'wb') as file:
-        #     pickle.dump(qa_idx_data[mode], file, protocol=pickle.HIGHEST_PROTOCOL)
-        print(f"questions_{mode}_{top_k}.h5' saved")
+        print(f"questions_{mode}_{top_k}_{multi_label}.h5' saved")
 
 
 def make_images(data_dir, dataset, size, batch_size=128, max_images=None):
@@ -239,8 +248,8 @@ def run_batch(cur_batch, model, dataset):
 
 if __name__ =='__main__':
     data_directory = os.path.join(home, 'data')
-    make_questions(data_directory, 'sample')
-    make_images(data_directory, 'sample', (448, 448), 5, 100)
+    make_questions(data_directory, 'vqa2', 1000, True)
+    # make_images(data_directory, 'sample', (448, 448), 5, 100)
     # make_questions(data_directory, 'sample')
     # make_images(data_directory, 'sample', (224, 224), 5, 100)
 

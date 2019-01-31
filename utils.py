@@ -93,7 +93,7 @@ def load_pretrained_conv():
 
 
 def load_dict(args):
-    dict_file = os.path.join(args.data_directory, args.dataset, f'data_dict_{args.top_k}.pkl')
+    dict_file = os.path.join(args.data_directory, args.dataset, f'data_dict_{args.top_k}_{args.multi_label}.pkl')
     with open(dict_file, 'rb') as file:
         data_dict = pickle.load(file)
     args.word_to_idx = data_dict['word_to_idx']
@@ -107,6 +107,12 @@ def load_dict(args):
     args.qt_size = len(args.question_type_to_idx)
     return args
 
+
+def to_onehot(a, a_size):
+    onehot = torch.zeros(len(a), a_size)
+    onehot[[i for i in range(len(a))], a] = 1
+    onehot = torch.min(onehot.sum(0) / 3.0, torch.ones(1))
+    return onehot
 
 # def make_model(args):
 #     if args.model == 'film':

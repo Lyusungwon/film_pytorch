@@ -4,6 +4,14 @@ import argparse
 import datetime
 from configloader import load_default_config
 from pathlib import Path
+from film import Film
+from san import San
+from rn import RelationalNetwork
+from mrn import Mrn
+from mlb import Mlb
+from basern import BaseRN
+from sarn import Sarn
+
 home = str(Path.home())
 
 
@@ -18,6 +26,7 @@ def get_config():
     data_arg.add_argument('--input-h', type=int)
     data_arg.add_argument('--input-w', type=int)
     data_arg.add_argument('--top-k', type=int)
+    data_arg.add_argument('--multi-labels', action='store_true')
 
     train_arg = parser.add_argument_group('Train')
     train_arg.add_argument('--batch-size', type=int)
@@ -97,7 +106,7 @@ def get_config():
         torch.cuda.set_device(args.device)
         args.device = torch.device(args.device)
 
-    args.data_config = [args.input_h, args.input_w, args.cpu_num, args.cv_pretrained, args.top_k]
+    args.data_config = [args.input_h, args.input_w, args.cpu_num, args.cv_pretrained, args.top_k, args.multi_label]
 
     config_list = [args.project, args.model, args.dataset, args.epochs, args.batch_size, args.lr,
                    args.weight_decay, args.gradient_clipping,
@@ -110,28 +119,37 @@ def get_config():
             ['film', args.film_res_kernel, args.film_res_layer,
              args.film_cf_filter, args.film_fc_hidden, args.film_fc_layer,
              args.memo]
+        model = Film(args)
     elif args.model == 'san':
         config_list = config_list + \
             ['san', args.san_layer, args.san_k,
              args.memo]
+        model = San(args)
     elif args.model == 'basern':
         config_list = config_list + \
             ['basern', args.basern_gt_hidden, args.basern_gt_layer, args.basern_fp_hidden, args.basern_fp_layer, args.basern_fp_dropout,
              args.memo]
+        model = BaseRN(args)
     elif args.model == 'rn':
         config_list = config_list + \
             ['rn', args.rn_gt_hidden, args.rn_gt_layer, args.rn_fp_hidden, args.rn_fp_layer, args.rn_fp_dropout,
              args.memo]
+        model = RelationalNetwork(args)
     elif args.model == 'sarn':
         config_list = config_list + \
             ['sarn', args.sarn_hp_hidden, args.sarn_hp_layer, args.sarn_gt_hidden, args.sarn_gt_layer, args.sarn_fp_hidden, args.sarn_fp_layer, args.sarn_fp_dropout,
              args.memo]
+        model = Sarn(args)
     elif args.model == 'mrn':
         config_list = config_list + \
             ['mrn', args.mrn_hidden, args.mrn_layer, args.memo]
+        model = Mrn(args)
     elif args.model == 'mlb':
         config_list = config_list + \
             ['mlb', args.mlb_hidden, args.mlb_glimpse, args.memo]
+        model = Mlb(args)
+    else:
+        print("Not an available model.")
 
     args.config = '_'.join(map(str, config_list))
     if args.load_model:
@@ -141,4 +159,5 @@ def get_config():
         args.log = os.path.join(args.log_directory, args.project, args.timestamp + args.config)
 
     print(f"Config: {args.config}")
-    return args
+
+    return args, model
