@@ -128,7 +128,7 @@ def make_questions(data_dir, dataset, top_k=None, multi_label=False):
     print(f'data_dict_{top_k}_{multi_label}.pkl saved')
     print(f"Start making {dataset} question data")
     for mode in modes:
-        with h5py.File(os.path.join(data_dir, dataset, f'questions_{mode}_{top_k}.h5'), 'w') as f:
+        with h5py.File(os.path.join(data_dir, dataset, f'questions_{mode}_{top_k}_{multi_label}.h5'), 'w') as f:
             q_dset = None
             for n, (image_dir, image_id, q_word_list, answer_word, q_type) in enumerate(qa_list[mode]):
                 if q_dset is None:

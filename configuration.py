@@ -4,6 +4,8 @@ import argparse
 import datetime
 from configloader import load_default_config
 from pathlib import Path
+import dataloader
+from utils import load_dict
 from film import Film
 from san import San
 from rn import RelationalNetwork
@@ -114,6 +116,10 @@ def get_config():
         ['cv', args.cv_filter, args.cv_kernel, args.cv_stride, args.cv_layer, args.cv_batchnorm,
          'te', args.te_pretrained, args.te_type, args.te_embedding, args.te_hidden, args.te_layer, args.te_dropout]
 
+    train_loader = dataloader.load_dataloader(args.data_directory, args.dataset, True, args.batch_size, args.data_config)
+    test_loader = dataloader.load_dataloader(args.data_directory, args.dataset, False, args.batch_size, args.data_config)
+    args = load_dict(args)
+
     if args.model == 'film':
         config_list = config_list + \
             ['film', args.film_res_kernel, args.film_res_layer,
@@ -160,4 +166,4 @@ def get_config():
 
     print(f"Config: {args.config}")
 
-    return args, model
+    return args, model, train_loader, test_loader

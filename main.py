@@ -4,16 +4,11 @@ from tensorboardX import SummaryWriter
 from utils import *
 from configuration import get_config
 from recorder import Recorder
-import dataloader
 
 
-args, model = get_config()
+args, model, train_loader, test_loader = get_config()
 device = args.device
 torch.manual_seed(args.seed)
-
-train_loader = dataloader.load_dataloader(args.data_directory, args.dataset, True, args.batch_size, args.data_config)
-test_loader = dataloader.load_dataloader(args.data_directory, args.dataset, False, args.batch_size, args.data_config)
-args = load_dict(args)
 start_epoch = 0
 batch_record_idx = 0
 
@@ -23,10 +18,10 @@ if args.lr_reduce:
 if args.load_model:
     model, optimizer, start_epoch, batch_record_idx = load_checkpoint(model, optimizer, args.log, device)
 
-if args.multi_labels:
-    criterion = F.binary_cross_entropy_with_logits()
+if args.multi_label:
+    criterion = F.binary_cross_entropy_with_logits
 else:
-    criterion = F.cross_entropy()
+    criterion = F.cross_entropy
 if args.multi_gpu:
     model = nn.DataParallel(model, device_ids=[i for i in range(args.gpu_num)])
 model = model.to(device)
@@ -50,7 +45,7 @@ def epoch(epoch_idx, is_train):
             if args.gradient_clipping:
                 nn.utils.clip_grad_value_(model.parameters(), args.gradient_clipping)
             optimizer.step()
-        pred = torch.max(output.datach(), 1)[1]
+        pred = torch.max(output.detach(), 1)[1]
         correct = (pred == answer)
         recorder.batch_end(loss, correct, types)
         if is_train and (batch_idx % args.log_interval == 0):
