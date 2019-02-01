@@ -1,6 +1,7 @@
 import os
 import csv
 import time
+import torch
 from collections import defaultdict, deque, OrderedDict
 from torchvision.utils import make_grid
 from utils import is_file_exist
@@ -17,6 +18,7 @@ class Recorder:
         self.idx_to_word = args.idx_to_word
         self.answer_idx_to_word = args.answer_idx_to_word
         self.qt_size = args.qt_size
+        self.multi_label = args.multi_label
         self.batch_record_idx = batch_record_idx
         self.csv_file = os.path.join(args.log_directory, args.project, f"{args.project}_log.csv")
         self.rolling_average = 5
@@ -62,21 +64,28 @@ class Recorder:
         self.epoch_start_time = time.time()
         self.batch_start_time = time.time()
 
-    def batch_end(self, loss, correct, types):
+    def batch_end(self, loss, output, answer, types):
+        if self.multi_label:
+            maxi = torch.max(output, 1)[1]
+            pred = torch.zeros_like(output.detach())
+            pred[torch.arange(output.size()[0]), maxi] = 1.0
+            correct = (pred * answer).sum(1)
+        else:
+            pred = torch.max(output, 1)[1]
+            correct = (pred == answer).float()
+
         self.batch_end_time = time.time()
-        self.batch_loss = loss.item()
-        self.epoch_loss += loss.item()
+        self.batch_loss = loss
+        self.epoch_loss += self.batch_loss
         self.record_types(correct, types)
         self.batch_correct = correct.sum().item()
-        self.epoch_correct += correct.sum().item()
+        self.epoch_correct += self.batch_correct
         self.batch_time = self.batch_end_time - self.batch_start_time
         self.batch_start_time = time.time()
 
     def record_types(self, correct, types):
-        correct = correct.cpu()
-        # for n in range(t):
         for i in range(self.qt_size):
-            idx = types == i
+            idx = (types == i).float()
             self.per_question["correct"][i] += (correct * idx).sum().item()
             self.per_question["number"][i] += idx.sum().item()
 

@@ -46,19 +46,20 @@ def epoch(epoch_idx, is_train):
             if args.gradient_clipping:
                 nn.utils.clip_grad_value_(model.parameters(), args.gradient_clipping)
             optimizer.step()
-        if args.multi_label:
-            maxi = torch.max(output.detach(), 1)[1]
-            pred = torch.zeros_like(output.detach())
-            pred[torch.arange(batch_size), maxi] = 1.0
-            correct = (pred * answer).sum(1).byte()
-            # answer = torch.max(answer, 1)[1]
-            # pred = torch.max(output.detach(), 1)[1]
-            # answer = torch.max(answer, 1)[1]
-            # correct = (pred == answer)
-        else:
-            pred = torch.max(output.detach(), 1)[1]
-            correct = (pred == answer)
-        recorder.batch_end(loss, correct, types)
+        # if args.multi_label:
+        #     maxi = torch.max(output.detach(), 1)[1]
+        #     pred = torch.zeros_like(output.detach())
+        #     pred[torch.arange(batch_size), maxi] = 1.0
+        #     correct = (pred * answer).sum(1).byte()
+        #     # answer = torch.max(answer, 1)[1]
+        #     # pred = torch.max(output.detach(), 1)[1]
+        #     # answer = torch.max(answer, 1)[1]
+        #     # correct = (pred == answer)
+        # else:
+        #     pred = torch.max(output.detach(), 1)[1]
+        #     correct = (pred == answer)
+        # recorder.batch_end(loss, correct, types)
+        recorder.batch_end(loss.item(), output.cpu().detach(), answer.cpu(), types.cpu())
         if is_train and (batch_idx % args.log_interval == 0):
             recorder.log_batch(batch_idx, batch_size)
     recorder.log_epoch()
