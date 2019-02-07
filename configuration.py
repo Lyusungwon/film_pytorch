@@ -110,7 +110,7 @@ def get_config():
         torch.cuda.set_device(args.device)
         args.device = torch.device(args.device)
 
-    args.data_config = [args.input_h, args.input_w, args.cpu_num, args.cv_pretrained, args.top_k, args.multi_label, args.text_max]
+    args.data_config = [args.input_h, args.input_w, args.cpu_num, args.cv_pretrained, args.top_k, args.multi_label, args.tokenizer, args.text_max]
 
     config_list = [args.project, args.model, args.dataset, args.epochs, args.batch_size, args.lr,
                    args.weight_decay, args.gradient_clipping,
