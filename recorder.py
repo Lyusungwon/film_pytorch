@@ -73,7 +73,6 @@ class Recorder:
         else:
             pred = torch.max(output, 1)[1]
             correct = (pred == answer).float()
-
         self.batch_end_time = time.time()
         self.batch_loss = loss
         self.epoch_loss += self.batch_loss

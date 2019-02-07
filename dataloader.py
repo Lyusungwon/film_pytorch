@@ -34,14 +34,14 @@ def collate_text(list_inputs):
     return images, (padded_questions, q_length), answers, question_types
 
 
-def load_dataloader(data_directory, dataset, is_train=True, batch_size=128, data_config=[224, 224, 0, True, 0, False]):
-    input_h, input_w, cpu_num, cv_pretrained, top_k, multi_label = data_config
+def load_dataloader(data_directory, dataset, is_train=True, batch_size=128, data_config=[224, 224, 0, True, 0, False, None, 0]):
+    input_h, input_w, cpu_num, cv_pretrained, top_k, multi_label, tokenizer, text_max = data_config
     if cv_pretrained:
         transform = transforms.Compose([transforms.ToTensor()])
     else:
         transform = transforms.Compose([transforms.Resize((input_h, input_w)), transforms.ToTensor()])
     dataloader = DataLoader(
-        VQA(data_directory, dataset, train=is_train, cv_pretrained=cv_pretrained, transform=transform, size=(input_h, input_w), top_k=top_k, multi_label=multi_label),
+        VQA(data_directory, dataset, train=is_train, cv_pretrained=cv_pretrained, transform=transform, size=(input_h, input_w), top_k=top_k, multi_label=multi_label, tokenizer=tokenizer, text_max=text_max),
         batch_size=batch_size, shuffle=True,
         num_workers=cpu_num, pin_memory=True,
         collate_fn=collate_text)
@@ -50,12 +50,13 @@ def load_dataloader(data_directory, dataset, is_train=True, batch_size=128, data
 
 class VQA(Dataset):
     """VQA dataset."""
-    def __init__(self, data_dir, dataset, train=True, cv_pretrained=True, transform=None, size=(224,224), top_k=0, multi_label=False):
+    def __init__(self, data_dir, dataset, train=True, cv_pretrained=True, transform=None, size=(224,224), top_k=0, multi_label=False, tokenizer=None, text_max=14):
         self.dataset = dataset
         self.mode = 'train' if train else 'val'
         self.cv_pretrained = cv_pretrained
         self.transform = transform
         self.multi_label = multi_label
+        self.text_max = text_max
         self.data_file = os.path.join(data_dir, dataset, f'data_dict_{top_k}_{multi_label}.pkl')
         self.question_file = os.path.join(data_dir, dataset, f'questions_{self.mode}_{top_k}_{multi_label}.h5')
         if self.cv_pretrained:
@@ -67,7 +68,7 @@ class VQA(Dataset):
             elif dataset == 'vqa2':
                 self.image_dir = os.path.join(data_dir, dataset, f'{self.mode}2014')
         if not is_file_exist(self.question_file):
-            make_questions(data_dir, dataset, top_k, multi_label)
+            make_questions(data_dir, dataset, top_k, multi_label, tokenizer)
         if cv_pretrained:
             if not is_file_exist(self.image_dir):
                 make_images(data_dir, dataset, size)
@@ -105,6 +106,9 @@ class VQA(Dataset):
             if self.transform:
                 image = self.transform(image).unsqueeze(0)
         q = torch.from_numpy(q).to(torch.long)
+        if self.text_max:
+            if len(q) > self.text_max:
+                q = q[:self.text_max]
         a = torch.Tensor(a).to(torch.long) if not self.multi_label else to_onehot(a, self.a_size)
         q_t = torch.Tensor([q_t]).to(torch.long)
         return image, q, a, q_t

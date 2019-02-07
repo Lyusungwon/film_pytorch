@@ -26,7 +26,8 @@ clevr_q_dict = {'count': 'count',
                 'query_material': 'query_attribute',
                 'query_color': 'query_attribute'}
 
-def make_questions(data_dir, dataset, top_k=None, multi_label=False):
+
+def make_questions(data_dir, dataset, top_k=None, multi_label=False, tokenizer=None):
     print(f"Start making {dataset} data pickle")
     if top_k and (dataset == 'vqa2' or dataset == 'vqa1'):
         answer_corpus = list()
@@ -91,8 +92,7 @@ def make_questions(data_dir, dataset, top_k=None, multi_label=False):
                         continue
                 image_id = q_obj['image_id']
                 image_dir = f'COCO_{mode}2014_{str(image_id).zfill(12)}.jpg'
-                question_text = question_list[q_obj['question_id']]
-                question_words = re.sub('[^0-9A-Za-z ]+', "", question_text).lower().split(' ')
+                question_words = preprocess_questions(question_list[q_obj['question_id']], tokenizer)
                 answer_type = q_obj["answer_type"]
                 q_corpus.update(question_words)
                 a_corpus.update(answer_word)
@@ -138,9 +138,7 @@ def make_questions(data_dir, dataset, top_k=None, multi_label=False):
                     a_dset = f.create_dataset('answers', (N,), dtype=dt)
                     qt_dset = f.create_dataset('question_types', (N, ), dtype='int32')
                     ii_dset = f.create_dataset('image_ids', (N,), dtype='int32')
-                q = [word_to_idx[word] for word in q_word_list]
-                q.append(1)
-                q_dset[n] = q
+                q_dset[n] = [word_to_idx[word] for word in q_word_list]
                 a_dset[n] = [answer_word_to_idx[word] for word in answer_word]
                 ii_dset[n] = image_id
                 qt_dset[n] = question_type_to_idx[q_type]
@@ -244,6 +242,45 @@ def run_batch(cur_batch, model, dataset):
         feats = model(image_batch)
         feats = feats.data.cpu().clone().numpy()
     return feats
+
+
+def tokenize_mcb(s):
+    t_str = s.lower()
+    for i in [r'\?',r'\!',r'\'',r'\"',r'\$',r'\:',r'\@',r'\(',r'\)',r'\,',r'\.',r'\;']:
+        t_str = re.sub( i, '', t_str)
+    for i in [r'\-',r'\/']:
+        t_str = re.sub( i, ' ', t_str)
+    q_list = re.sub(r'\?','',t_str.lower()).split(' ')
+    q_list = list(filter(lambda x: len(x) > 0, q_list))
+    return q_list
+
+
+def tokenize_rm(sentence):
+    return [i for i in re.split(r"([-.\"',:? !\$#@~()*&\^%;\[\]/\\\+<>\n=])", sentence) if i!='' and i!=' ' and i!='\n'];
+
+
+def tokenize_active(question):
+    question_text = question.lower()
+    question_text = question_text.replace("'s", " 's").replace("'til ", ' until ') \
+        .replace('+', ' plus ').replace('$', ' dollars ').replace('#', ' number ').replace('%', ' percent ') \
+        .replace('&', ' and ').replace(';', ' ; ')
+    question_text = re.sub('[!>:,`\_\^\(\)\*\?\.\'"]+', "", question_text)
+    question_text = re.sub('[\/\-"]+', " ", question_text)
+    question_words = question_text.split(' ')
+    return question_words
+
+
+def preprocess_questions(sentence, nlp=None):
+    if nlp == 'nltk':
+        from nltk.tokenize import word_tokenize
+        question_words = word_tokenize(str(sentence).lower())
+    elif nlp == 'mcb':
+        question_words = tokenize_mcb(sentence)
+    elif nlp == 'rm':
+        question_words = tokenize_rm(sentence)
+    else:
+        question_words = tokenize_active(sentence)
+    return question_words
 
 
 if __name__ =='__main__':
